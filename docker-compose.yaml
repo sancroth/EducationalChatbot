@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: chatbot-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: mysecretpassword
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data
+    networks:
+      - chatbot_network
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin-chatbot
+    ports:
+      - "8081:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    networks:
+      - chatbot_network
+  chatbot-auth:
+    build:
+      context: ./auth
+    container_name: chatbot-auth
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      - postgres
+    networks:
+      - chatbot_network
+  chatbot-nginx:
+    build:
+      context: ./chatbot-nginx
+    container_name: chatbot-nginx
+    ports:
+      - "8888:8888"
+    environment:
+      NGINX_SERVER: ${NGINX_SERVER_URL}
+      RASA_SERVER: ${RASA_SERVER_URL}
+      AUTH_SERVER: ${AUTH_SERVER_URL}
+    networks:
+      - chatbot_network
+networks:
+  chatbot_network:
+    driver: bridge

@@ -2,5 +2,7 @@ chatbot/
 educationalAssistant/models/
 educationalAssistant/.rasa/
 educationalAssistant/.rasa_env
+auth/.env
+.env
 pg_data/
 __pycache__

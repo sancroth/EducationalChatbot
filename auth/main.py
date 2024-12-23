@@ -3,6 +3,7 @@ from flask_jwt_extended import JWTManager, create_access_token
 from flask_cors import CORS
 import psycopg2
 import bcrypt
+import os
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -12,11 +13,11 @@ jwt = JWTManager(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Database connection details
-DB_HOST = "localhost"
-DB_USER = "postgres"
-DB_PASSWORD = "mysecretpassword"
-DB_PORT = "5432"
-DB_NAME = "ice"
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "mysecretpassword")
+DB_PORT = os.getenv("DB_PORT", "5432")
+DB_NAME = os.getenv("DB_NAME", "ice")
 
 def get_db_connection():
     return psycopg2.connect(

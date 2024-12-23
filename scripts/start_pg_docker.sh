@@ -11,6 +11,6 @@ docker run -d \
 
 docker run -p 8081:80    \
     --name pgadmin-chatbot \
-    -e 'PGADMIN_DEFAULT_EMAIL=sancroth@gmail.com' \
+    -e 'PGADMIN_DEFAULT_EMAIL=example@gmail.com' \
     -e 'PGADMIN_DEFAULT_PASSWORD=mysupersecret' \
     -d dpage/pgadmin4

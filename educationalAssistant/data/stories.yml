@@ -1,0 +1,219 @@
+version: "3.1"
+
+stories:
+- story: Offer help after greeting and print options
+  steps:
+    - intent: greet
+    - action: utter_greet_back
+    - action: utter_offer_help
+    - intent: user_affirm
+    - action: action_set_user_requires_bot_options
+    - slot_was_set:
+        - requested_bot_options: True
+    - action: utter_list_bot_options
+    - action: utter_followup_offer_help
+
+- story: Offer help after greeting and do not print options
+  steps:
+    - intent: greet
+    - action: utter_greet_back
+    - action: utter_offer_help
+    - intent: user_deny
+    - action: action_set_user_requires_bot_options
+    - slot_was_set:
+        - requested_bot_options: False
+    - action: utter_cool
+    - action: utter_followup_offer_help
+
+- story: Offer help after greeting and do not print options 2
+  steps:
+    - intent: greet
+    - action: utter_greet_back
+    - action: utter_offer_help
+    - intent: user_deny_options
+    - action: action_set_user_requires_bot_options
+    - slot_was_set:
+        - requested_bot_options: False
+    - action: utter_cool
+    - action: utter_followup_offer_help
+
+- story: Respond based on mood
+  steps:
+    - intent: mood_response
+      entities:
+        - mood: "καλά"
+    - action: utter_mood_good
+
+- story: Mood is bad
+  steps:
+    - intent: mood_response
+      entities:
+        - mood: "χάλια"
+    - action: utter_mood_bad
+
+- story: Offer the remaining weekly schedule
+  steps:
+    - intent: user_asks_schedule_rest_of_the_week
+    - action: action_get_weekly_schedule
+    - action: utter_followup_offer_help
+
+- story: Offer department secretariat information
+  steps:
+    - intent: get_department_secretariat_info
+    - action: action_get_department_secretariat_info
+    - action: utter_followup_offer_help
+
+- story: Offer department secretariat information
+  steps:
+    - intent: get_department_secretariat_phone
+    - action: action_get_department_secretariat_info
+    - action: utter_followup_offer_help
+
+- story: Offer department secretariat information
+  steps:
+    - intent: get_department_secretariat_availability
+    - action: action_get_department_secretariat_info
+    - action: utter_followup_offer_help
+
+- story: Offer department secretariat information
+  steps:
+    - intent: get_department_secretariat_email
+    - action: action_get_department_secretariat_info
+    - action: utter_followup_offer_help
+
+- story: Offer department secretariat information
+  steps:
+    - intent: get_department_website_url
+    - action: action_get_department_secretariat_info
+    - action: utter_followup_offer_help
+
+- story: Handle educational question via OpenAI
+  steps:
+    - intent: ask_educational_question
+    - action: action_ask_educational_question
+    - checkpoint: educational_question_handled
+
+- story: Handle coding question via OpenAI
+  steps:
+    - intent: explain_code
+    - action: action_ask_educational_question
+    - checkpoint: educational_question_handled
+
+- story: Follow-up education related question with more information
+  steps:
+    - checkpoint: educational_question_handled
+    - intent: follow_up_more_detailed_information
+    - action: action_ask_educational_question
+
+- story: Follow-up education related question but less complicated
+  steps:
+    - checkpoint: educational_question_handled
+    - intent: follow_up_less_complicated
+    - action: action_ask_educational_question
+
+- story: Follow-up education related question with more information
+  steps:
+    - checkpoint: educational_question_handled
+    - intent: follow_up_tell_me_more
+    - action: action_ask_educational_question
+
+- story: User interrupts the schedule meeting with teacher form and doesn't want to continue
+  steps:
+    - intent: user_request_scheduled_meeting_with_teacher
+    - action: scheduled_meeting_with_teacher_form
+    - active_loop: scheduled_meeting_with_teacher_form
+    - intent: user_cancel_request
+    - action: utter_confirm_cancel
+    - action: action_deactivate_loop
+    - active_loop: null
+
+# - story: User schedule meeting with teacher form full
+#   steps:
+#   - intent: user_request_scheduled_meeting_with_teacher
+#   - action: scheduled_meeting_with_teacher_form
+#   - active_loop: scheduled_meeting_with_teacher_form
+#   - action: action_listen
+#   - slot_was_set:
+#       - requested_slot: scheduled_meeting_teacher_email
+#   - action: utter_ask_scheduled_meeting_correct_teacher_email
+#   - intent: user_affirm
+#   - slot_was_set:
+#       - scheduled_meeting_correct_teacher_email: True
+#   - action: action_listen
+#   - slot_was_set:
+#       - requested_slot: scheduled_meeting_date
+#   - action: utter_ask_scheduled_meeting_correct_date
+#   - intent: user_affirm
+#   - slot_was_set:
+#       - scheduled_meeting_correct_date: True
+#   - action: action_deactivate_loop
+#   - active_loop: null
+#   - action: action_schedule_meeting_with_teacher
+#   - action: utter_confirm_meeting_with_teacher_scheduled
+#   - action: utter_followup_offer_help
+
+# - story: User interrupts the schedule meeting form before supplying email
+#   steps:
+#   - intent: user_request_scheduled_meeting_with_teacher
+#   - action: scheduled_meeting_with_teacher_form
+#   - active_loop: action_listen
+#   - slot_was_set:
+#       - requested_slot: scheduled_meeting_teacher_email
+#   - action: utter_ask_scheduled_meeting_correct_teacher_email
+#   - intent: user_cancel_request
+#   - action: utter_confirm_cancel
+#   - action: action_deactivate_loop
+#   - active_loop: null
+#   - action: utter_followup_offer_help
+
+# - story: User interrupts the schedule meeting form after supplying email and before confirming date
+#   steps:
+#   - intent: user_request_scheduled_meeting_with_teacher
+#   - action: scheduled_meeting_with_teacher_form
+#   - active_loop: scheduled_meeting_with_teacher_form
+#   - action: action_listen
+#   - slot_was_set:
+#       - requested_slot: scheduled_meeting_teacher_email
+#   - action: utter_ask_scheduled_meeting_correct_teacher_email
+#   - intent: user_affirm
+#   - slot_was_set:
+#       - scheduled_meeting_correct_teacher_email: True
+#   - action: action_listen
+#   - slot_was_set:
+#       - requested_slot: scheduled_meeting_date
+#   - action: utter_ask_scheduled_meeting_correct_date
+#   - intent: user_cancel_request
+#   - action: utter_confirm_cancel
+#   - action: action_deactivate_loop
+#   - active_loop: null
+#   - action: utter_followup_offer_help
+
+# - story: User interrupts the schedule meeting form after supplying email and before supplying date
+#   steps:
+#   - intent: user_request_scheduled_meeting_with_teacher
+#   - action: scheduled_meeting_with_teacher_form
+#   - active_loop: scheduled_meeting_with_teacher_form
+#   - action: action_listen
+#   - slot_was_set:
+#       - requested_slot: scheduled_meeting_teacher_email
+#   - action: utter_ask_scheduled_meeting_correct_teacher_email
+#   - intent: user_affirm
+#   - slot_was_set:
+#       - scheduled_meeting_correct_teacher_email: True
+#   - action: action_listen
+#   - intent: user_cancel_request
+#   - action: utter_confirm_cancel
+#   - action: action_deactivate_loop
+#   - active_loop: null
+#   - action: utter_followup_offer_help
+
+# - story: User interrupts the schedule meeting form as soon as it starts
+#   steps:
+#   - intent: user_request_scheduled_meeting_with_teacher
+#   - action: scheduled_meeting_with_teacher_form
+#   - active_loop: scheduled_meeting_with_teacher_form
+#   - intent: user_cancel_request
+#   - action: utter_confirm_cancel
+#   - action: action_deactivate_loop
+#   - active_loop: null
+#   - action: utter_followup_offer_help

@@ -1,0 +1,6 @@
+chatbot/
+educationalAssistant/models/
+educationalAssistant/.rasa/
+educationalAssistant/.rasa_env
+pg_data/
+__pycache__

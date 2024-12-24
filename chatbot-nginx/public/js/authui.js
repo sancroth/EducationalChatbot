@@ -107,7 +107,7 @@ $form_login.find('input[type="submit"]').on('click', async function(event){
 
   try {
       // Make POST request to Flask API
-      const response = await fetch("http://172.17.93.85:5000/login", {
+      const response = await fetch("__AUTH_SERVER__/login", {
           method: "POST",
           headers: {
               "Content-Type": "application/json"
@@ -121,7 +121,7 @@ $form_login.find('input[type="submit"]').on('click', async function(event){
           // alert("Login successful!");
           console.log("Token:", result.access_token);
           localStorage.setItem("access_token", result.access_token);
-          window.location.href = "http://172.17.93.85:8888/bot";
+          window.location.href = "__NGINX_SERVER__/bot";
       } else {
           alert(result.error || "Login failed.");
       }

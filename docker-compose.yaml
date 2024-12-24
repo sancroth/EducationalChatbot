@@ -47,38 +47,37 @@ services:
     container_name: chatbot-nginx
     ports:
       - "8888:8888"
+      - "8889:8889"
     environment:
       NGINX_SERVER: ${NGINX_SERVER_URL}
       RASA_SERVER: ${RASA_SERVER_URL}
       AUTH_SERVER: ${AUTH_SERVER_URL}
     networks:
       - chatbot_network
-    volumes:
-      - ./chatbot-nginx/public:/usr/share/nginx/html:rw,uid=101,gid=101
-  rasa-server:
-    image: chatbot-rasa:latest
-    pull_policy: if_not_present
-    container_name: rasa-server
-    environment:
-      ROLE: rasa
-    ports:
-      - "127.0.0.1:5005:5005"
-    depends_on:
-      - chatbot-auth
-    volumes:
-      - ./chatbot-rasa:/app
-    networks:
-      - chatbot_network
-  rasa-actions:
-    image: chatbot-rasa:latest
-    pull_policy: if_not_present
-    container_name: rasa-actions
-    ports:
-      - "127.0.0.1:5055:5055"
-    environment:
-      ROLE: action
-    networks:
-      - chatbot_network
+  # rasa-server:
+  #   image: chatbot-rasa:latest
+  #   pull_policy: if_not_present
+  #   container_name: rasa-server
+  #   environment:
+  #     ROLE: rasa
+  #   ports:
+  #     - "5005:5005"
+  #   depends_on:
+  #     - chatbot-auth
+  #   volumes:
+  #     - ./chatbot-rasa:/app
+  #   networks:
+  #     - chatbot_network
+  # rasa-actions:
+  #   image: chatbot-rasa:latest
+  #   pull_policy: if_not_present
+  #   container_name: rasa-actions
+  #   ports:
+  #     - "127.0.0.1:5055:5055"
+  #   environment:
+  #     ROLE: action
+  #   networks:
+  #     - chatbot_network
 networks:
   chatbot_network:
     driver: bridge

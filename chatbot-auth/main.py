@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_jwt_extended import JWTManager, create_access_token
 from flask_cors import CORS
 from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import psycopg2
 import bcrypt
 import os
@@ -10,6 +11,13 @@ import os
 app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = 'chatbot_jwt_secret_key'
 jwt = JWTManager(app)
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["5 per second"],
+    storage_uri="memory://",
+)
 
 CORS(app, resources={r"/*": {"origins": "*"}})
 

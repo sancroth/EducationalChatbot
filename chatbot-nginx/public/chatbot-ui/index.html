@@ -12,6 +12,22 @@
 
             // Function to initialize or reinitialize the Rasa WebChat
             let initWebChat = () => {
+
+                try {
+                    let token = localStorage.getItem("access_token");
+                    if (!token) throw new Error("Token not found");
+
+                    let payload = JSON.parse(atob(token.split(".")[1]));
+
+                    let isExpired = Date.now() >= payload.exp * 1000;
+                    if (isExpired) throw new Error("Token expired");
+                } catch (e) {
+                    console.error("JWT validation failed:", e);
+                    alert("Authentication required. Please log in again.");
+                    localStorage.removeItem("access_token");
+                    window.location.href = "/auth"; // Redirect to login page
+                }
+
                 console.log("Initializing Rasa WebChat...");
                 window.WebChat.default({
                     customData: {
@@ -22,29 +38,15 @@
                         authenticated: payload.sub.authenticated,
                     },
                     initPayload: "/initialize",
-                    socketUrl: "__RASA_SERVER__",
+                    socketUrl: "http://172.17.93.85:8888/rasa",
                     title: "Educational Assistant",
-                    profileAvatar: "__NGINX_SERVER__/static/bot.webp",
+                    profileAvatar: "http://172.17.93.85:8888/static/bot.webp",
                     showMessageDate: true,
                     inputTextFieldHint: "Γράψε μου κατι...",
                     showFullScreenButton: true,
                 });
             };
 
-            try {
-                let token = localStorage.getItem("access_token");
-                if (!token) throw new Error("Token not found");
-
-                let payload = JSON.parse(atob(token.split(".")[1]));
-
-                let isExpired = Date.now() >= payload.exp * 1000;
-                if (isExpired) throw new Error("Token expired");
-            } catch (e) {
-                console.error("JWT validation failed:", e);
-                alert("Authentication required. Please log in again.");
-                localStorage.removeItem("access_token");
-                window.location.href = "/auth"; // Redirect to login page
-            }
 
             // Check if the Rasa WebChat script is already loaded
             const existingScript = document.querySelector(

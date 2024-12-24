@@ -2,6 +2,7 @@ version: "3.9"
 
 services:
   postgres:
+    user: "999:999"
     image: postgres:latest
     container_name: chatbot-postgres
     ports:
@@ -10,7 +11,7 @@ services:
       POSTGRES_PASSWORD: mysecretpassword
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - ./pg_data:/var/lib/postgresql/data
+      - ./pg_data:/var/lib/postgresql/data:rw,uid=999,gid=999
     networks:
       - chatbot_network
   pgadmin:
@@ -40,6 +41,7 @@ services:
     networks:
       - chatbot_network
   chatbot-nginx:
+    user: "101:101"
     image: chatbot-nginx:latest
     pull_policy: if_not_present
     container_name: chatbot-nginx
@@ -51,6 +53,8 @@ services:
       AUTH_SERVER: ${AUTH_SERVER_URL}
     networks:
       - chatbot_network
+    volumes:
+      - ./chatbot-nginx/public:/usr/share/nginx/html:rw,uid=101,gid=101
   rasa-server:
     image: chatbot-rasa:latest
     pull_policy: if_not_present
@@ -63,6 +67,8 @@ services:
       - chatbot-auth
     volumes:
       - ./chatbot-rasa:/app
+    networks:
+      - chatbot_network
   rasa-actions:
     image: chatbot-rasa:latest
     pull_policy: if_not_present
@@ -71,6 +77,8 @@ services:
       - "127.0.0.1:5055:5055"
     environment:
       ROLE: action
+    networks:
+      - chatbot_network
 networks:
   chatbot_network:
     driver: bridge

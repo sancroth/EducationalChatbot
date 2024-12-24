@@ -118,7 +118,7 @@ $form_login.find('input[type="submit"]').on('click', async function(event){
       const result = await response.json();
 
       if (response.status === 200) {
-          alert("Login successful!");
+          // alert("Login successful!");
           console.log("Token:", result.access_token);
           localStorage.setItem("access_token", result.access_token);
           window.location.href = "__NGINX_SERVER__/bot";

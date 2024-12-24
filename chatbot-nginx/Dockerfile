@@ -5,7 +5,6 @@ COPY nginx.conf /etc/nginx/nginx.conf
 COPY public/ /usr/share/nginx/html
 
 COPY entrypoint.sh /entrypoint.sh
-COPY .env /.env
 COPY .htpasswd /etc/nginx/.htpasswd
 
 RUN chmod +x /entrypoint.sh &&\

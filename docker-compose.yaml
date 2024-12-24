@@ -5,7 +5,7 @@ services:
     image: postgres:latest
     container_name: chatbot-postgres
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_PASSWORD: mysecretpassword
       PGDATA: /var/lib/postgresql/data/pgdata
@@ -17,15 +17,15 @@ services:
     image: dpage/pgadmin4
     container_name: pgadmin-chatbot
     ports:
-      - "8081:80"
+      - "127.0.0.1:8081:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     networks:
       - chatbot_network
   chatbot-auth:
-    build:
-      context: ./auth
+    image: chatbot-auth:latest
+    pull_policy: if_not_present
     container_name: chatbot-auth
     ports:
       - "5000:5000"
@@ -40,8 +40,8 @@ services:
     networks:
       - chatbot_network
   chatbot-nginx:
-    build:
-      context: ./chatbot-nginx
+    image: chatbot-nginx:latest
+    pull_policy: if_not_present
     container_name: chatbot-nginx
     ports:
       - "8888:8888"
@@ -51,6 +51,26 @@ services:
       AUTH_SERVER: ${AUTH_SERVER_URL}
     networks:
       - chatbot_network
+  rasa-server:
+    image: chatbot-rasa:latest
+    pull_policy: if_not_present
+    container_name: rasa-server
+    environment:
+      ROLE: rasa
+    ports:
+      - "127.0.0.1:5005:5005"
+    depends_on:
+      - chatbot-auth
+    volumes:
+      - ./chatbot-rasa:/app
+  rasa-actions:
+    image: chatbot-rasa:latest
+    pull_policy: if_not_present
+    container_name: rasa-actions
+    ports:
+      - "127.0.0.1:5055:5055"
+    environment:
+      ROLE: action
 networks:
   chatbot_network:
     driver: bridge

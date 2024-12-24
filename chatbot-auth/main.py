@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_jwt_extended import JWTManager, create_access_token
 from flask_cors import CORS
+from flask_limiter import Limiter
 import psycopg2
 import bcrypt
 import os
@@ -13,7 +14,7 @@ jwt = JWTManager(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Database connection details
-DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_HOST = os.getenv("DB_HOST", "postgres")
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "mysecretpassword")
 DB_PORT = os.getenv("DB_PORT", "5432")
@@ -25,6 +26,7 @@ def get_db_connection():
     )
 
 @app.route('/login', methods=['POST'])
+@limiter.limit("5 per second")
 def login():
     data = request.json
     email = data.get('email')

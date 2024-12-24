@@ -1,7 +1,7 @@
 chatbot/
-educationalAssistant/models/
-educationalAssistant/.rasa/
-educationalAssistant/.rasa_env
+chatbot-rasa/models/
+chatbot-rasa/.rasa/
+chatbot-rasa/.rasa_env
 auth/.env
 .env
 pg_data/

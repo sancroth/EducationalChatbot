@@ -41,7 +41,9 @@ forms:
   scheduled_meeting_with_teacher_form:
     required_slots:
       - scheduled_meeting_teacher_email
+      - scheduled_meeting_correct_teacher_email
       - scheduled_meeting_date
+      - scheduled_meeting_correct_date
 
 entities:
   - department
@@ -129,21 +131,44 @@ slots:
         entity: date
         conditions:
         - active_loop: scheduled_meeting_with_teacher_form
-          requested_slot: date
+          requested_slot: scheduled_meeting_date
 
   scheduled_meeting_correct_teacher_email:
     type: bool
-    initial_value: false
-    influence_conversation: false
+    initial_value: null
+    influence_conversation: true
     mappings:
-      - type: custom
+      - type: from_intent
+        value: True
+        intent: user_affirm
+        conditions:
+        - active_loop: scheduled_meeting_with_teacher_form
+          requested_slot: scheduled_meeting_correct_teacher_email
+      - type: from_intent
+        value: False
+        intent: user_deny
+        conditions:
+        - active_loop: scheduled_meeting_with_teacher_form
+          requested_slot: scheduled_meeting_correct_teacher_email
+
 
   scheduled_meeting_correct_date:
     type: bool
-    initial_value: false
-    influence_conversation: false
+    initial_value: null
+    influence_conversation: true
     mappings:
-      - type: custom 
+      - type: from_intent
+        value: True
+        intent: user_affirm
+        conditions:
+        - active_loop: scheduled_meeting_with_teacher_form
+          requested_slot: scheduled_meeting_correct_date
+      - type: from_intent
+        value: False
+        intent: user_deny
+        conditions:
+        - active_loop: scheduled_meeting_with_teacher_form
+          requested_slot: scheduled_meeting_correct_date
 
 responses:
   utter_default_fallback:
@@ -233,7 +258,7 @@ responses:
     - text: "Ποια ημερομηνία θα σε ενδιέφερε;"
 
   utter_ask_scheduled_meeting_correct_teacher_email:
-    - text: "To email που δήλωσες είναι: {university_email}. Συμφωνείς;"
+    - text: "To email που δήλωσες είναι: . Συμφωνείς;"
       buttons:
         - title: "Ναι"
           payload: '/user_affirm'
@@ -241,7 +266,7 @@ responses:
           payload: '/user_deny'
 
   utter_ask_scheduled_meeting_correct_date:
-    - text: "Η ημερομηνίας που δήλωσες είναι: {date}. Συμφωνείς;"
+    - text: "Η ημερομηνίας που δήλωσες είναι: . Συμφωνείς;"
       buttons:
         - title: "Ναι"
           payload: '/user_affirm'

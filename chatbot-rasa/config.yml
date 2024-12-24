@@ -34,10 +34,10 @@ pipeline:
     model_name: "bert"
     model_weights: "nlpaueb/bert-base-greek-uncased-v1"
   - name: DIETClassifier
-    epochs: 100
+    epochs: 50
     constrain_similarities: True
   - name: ResponseSelector
-    epochs: 100
+    epochs: 50
     retrieval_intent: chitchat
   - name: EntitySynonymMapper
   - name: RegexEntityExtractor
@@ -76,9 +76,9 @@ policies:
   - name: MemoizationPolicy
   - name: TEDPolicy
     max_history: 5
-    epochs: 100
+    epochs: 50
   - name: UnexpecTEDIntentPolicy
-    epochs: 100
+    epochs: 50
     max_history: 8
   - name: RulePolicy
     core_fallback_threshold: 0.7

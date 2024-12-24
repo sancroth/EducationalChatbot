@@ -18,6 +18,7 @@ import psycopg2
 import os
 from datetime import datetime, timedelta
 from openai import OpenAI
+from rasa_sdk.events import EventType
 
 DB_CONFIG = {
     "dbname":"ice",
@@ -326,9 +327,6 @@ class ActionUpdateOpenAIDetailLevel(Action):
             "default": "default"
         }
 
-        print("MPIKA GAMO TI MANA SOU")
-        print(tracker.get_slot('latest_user_intent'))
-
         last_intent = tracker.get_slot('latest_user_intent')
         if last_intent!=None:
             return [SlotSet("user_detail_level_preference",DETAIL_INTENT_TO_LEVEL[last_intent])]
@@ -338,51 +336,20 @@ class ActionUpdateOpenAIDetailLevel(Action):
 class ValidateScheduledMeetingWithTeacherForm(FormValidationAction):
     def name(self) -> Text:
         return "validate_scheduled_meeting_with_teacher_form"
-
-    async def required_slots(self, domain_slots, dispatcher, tracker, domain):
-        updated_slots = domain_slots.copy()
-        print("mpika required slots")
-        if tracker.get_slot("scheduled_meeting_teacher_email") and tracker.get_slot("scheduled_meeting_correct_teacher_email")==None:
-            print("mpika required slots + meeting")
-            updated_slots = ["scheduled_meeting_correct_teacher_email"] + updated_slots
-        if tracker.get_slot("scheduled_meeting_date") and tracker.get_slot("scheduled_meeting_correct_date")==None:
-            print("mpika required slots + date")
-            updated_slots = ["scheduled_meeting_correct_date"] + updated_slots
-        print(updated_slots)
-        return updated_slots
-
-    async def extract_scheduled_meeting_correct_teacher_email(
-        self, 
-        dispatcher: CollectingDispatcher, 
-        tracker: Tracker, 
-        domain: Dict
-    ) -> Dict[Text, Any]:
-        print("trexo extract correct email")
-        intent = tracker.get_intent_of_latest_message()
-        return {"scheduled_meeting_correct_teacher_email": intent == "user_affirm"}
     
     def validate_scheduled_meeting_correct_teacher_email(
-        self, 
-        dispatcher: CollectingDispatcher, 
-        tracker: Tracker, 
-        domain: Dict
-    ) -> Dict[Text, Any]:
-        print("trexo validate correct date")
-        if tracker.get_slot("scheduled_meeting_correct_teacher_email"):
-            return {"scheduled_meeting_teacher_email": tracker.get_slot("scheduled_meeting_teacher_email"), "scheduled_meeting_correct_teacher_email": True}
-        return {"scheduled_meeting_teacher_email": None, "scheduled_meeting_correct_teacher_email": None}
-    
-
-    async def extract_scheduled_meeting_correct_date(
         self,
         slot_value: Any,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
         domain: DomainDict,
     ) -> Dict[Text, Any]:
-        print("trexo extract correct date")
-        intent = tracker.get_intent_of_latest_message()
-        return {"scheduled_meeting_correct_date": intent == "user_affirm"}
+        print("trexo validate correct email")
+        print(tracker.get_slot("scheduled_meeting_correct_teacher_email"))
+        if tracker.get_slot("scheduled_meeting_correct_teacher_email"):
+            return {"scheduled_meeting_teacher_email": tracker.get_slot("scheduled_meeting_teacher_email"), "scheduled_meeting_correct_teacher_email": True}
+        return {"scheduled_meeting_teacher_email": None, "scheduled_meeting_correct_teacher_email": None}
+    
 
     def validate_scheduled_meeting_correct_date(
         self,
@@ -392,6 +359,7 @@ class ValidateScheduledMeetingWithTeacherForm(FormValidationAction):
         domain: DomainDict,
     ) -> Dict[Text, Any]:
         print("trexo validate correct date")
+        print(tracker.get_slot("scheduled_meeting_correct_date"))
         if tracker.get_slot("scheduled_meeting_correct_date"):
             return {"scheduled_meeting_date": tracker.get_slot("scheduled_meeting_teacher_email"), "scheduled_meeting_correct_date": True}
         return {"scheduled_meeting_date": None, "scheduled_meeting_correct_date": None}
@@ -421,16 +389,17 @@ class ValidateScheduledMeetingWithTeacherForm(FormValidationAction):
     ) -> Dict[Text, Any]:
         """Validate cuisine value."""
         try:
-            # Parse the date with the expected format
             date_obj = datetime.strptime(slot_value, "%d/%m/%Y")
-            
+
+            # Get the current date
             today = datetime.today()
-            
-            min_date = today + 1
+
+            # Define the minimum and maximum range
+            min_date = today + timedelta(days=1)
             max_date = today + timedelta(days=30)
-            
+
             # Check if the date is within the range
-            if date_obj <= min_date <= max_date:
+            if min_date <= date_obj <= max_date:
                 return {"scheduled_meeting_date": slot_value}
             else:
                 return {"scheduled_meeting_date": None }
@@ -445,7 +414,12 @@ class ActionScheduleMeetingWithTeacher(Action):
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
+        # reset all related slots
         print("OLA KALA")
         
-        return []
-
+        return [
+            SlotSet("scheduled_meeting_teacher_email", None),
+            SlotSet("scheduled_meeting_correct_teacher_email", None),
+            SlotSet("scheduled_meeting_date", None),
+            SlotSet("scheduled_meeting_correct_date",None)
+        ]

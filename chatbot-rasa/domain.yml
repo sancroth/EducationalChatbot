@@ -1,5 +1,5 @@
 version: "3.1"
-
+# "customData":{"language":"el","uid":22,"role_id":1,"department_id":1,"department_key":"cse","authenticated":true}
 intents:
   - greet
   - user_affirm
@@ -36,12 +36,15 @@ actions:
   - action_ask_educational_question
   - action_update_level_of_detail_user_preference
   - action_schedule_meeting_with_teacher
+  - action_schedule_meeting_with_teacher_reset
   - validate_scheduled_meeting_with_teacher_form
 forms:
   scheduled_meeting_with_teacher_form:
     required_slots:
       - scheduled_meeting_teacher_email
       - scheduled_meeting_correct_teacher_email
+      - scheduled_meeting_min_date
+      - scheduled_meeting_max_date
       - scheduled_meeting_date
       - scheduled_meeting_correct_date
 
@@ -64,6 +67,12 @@ slots:
     - type: custom
 
   department:
+    type: text
+    influence_conversation: false
+    mappings:
+    - type: custom
+
+  department_id:
     type: text
     influence_conversation: false
     mappings:
@@ -151,7 +160,6 @@ slots:
         - active_loop: scheduled_meeting_with_teacher_form
           requested_slot: scheduled_meeting_correct_teacher_email
 
-
   scheduled_meeting_correct_date:
     type: bool
     initial_value: null
@@ -169,6 +177,26 @@ slots:
         conditions:
         - active_loop: scheduled_meeting_with_teacher_form
           requested_slot: scheduled_meeting_correct_date
+
+  scheduled_meeting_min_date:
+    type: text
+    initial_value: null
+    influence_conversation: false
+    mappings:
+      - type: custom 
+        conditions:
+        - active_loop: scheduled_meeting_with_teacher_form
+          requested_slot: scheduled_meeting_min_date
+
+  scheduled_meeting_max_date:
+    type: text
+    initial_value: null
+    influence_conversation: false
+    mappings:
+      - type: custom 
+        conditions:
+        - active_loop: scheduled_meeting_with_teacher_form
+          requested_slot: scheduled_meeting_max_date
 
 responses:
   utter_default_fallback:
@@ -249,16 +277,25 @@ responses:
     - text: "Δεν έγινε αποθήκευση."
 
   utter_confirm_meeting_with_teacher_scheduled:
-    - text: "Το αίτημα για ρεντεβού σου έχει σταλεί! Θα λάβεις email επιβεβαίωσης σύντομα!"
+    - text: "Το αίτημα για ραντεβού σου έχει σταλεί! Θα λάβεις email επιβεβαίωσης σύντομα!"
 
   utter_ask_scheduled_meeting_teacher_email:
     - text: "Ποιο είναι το email του/της καθηγητή/καθηγήτριας που θέλεις να συναντήσεις;"
 
+  utter_scheduled_meeting_teach_email_found:
+    - text: "Το email {scheduled_meeting_teacher_email} επαληθεύτηκε ως καθηγητής του τμήματος σου!"
+
+  utter_scheduled_meeting_teach_email_not_found:
+    - text: "Το email {scheduled_meeting_teacher_email} δυστηχώς δεν επαληθεύτηκε ως καθηγητής του τμήματος σου!"
+
+  utter_scheluded_meeting_teach_email_deny:
+    - text: "Το domain του email {scheduled_meeting_teacher_email} δεν ανήκει στο τμήμα σου. Παράδειγμα email: example@uniwa.gr."
+
   utter_ask_scheduled_meeting_date:
-    - text: "Ποια ημερομηνία θα σε ενδιέφερε;"
+    - text: "Ποια ημερομηνία θα σε ενδιέφερε; Διαθέσιμες ημερομηνίες: {scheduled_meeting_min_date} - {scheduled_meeting_max_date}"
 
   utter_ask_scheduled_meeting_correct_teacher_email:
-    - text: "To email που δήλωσες είναι: . Συμφωνείς;"
+    - text: "To email που δήλωσες είναι: {scheduled_meeting_teacher_email}. Συμφωνείς;"
       buttons:
         - title: "Ναι"
           payload: '/user_affirm'
@@ -266,9 +303,15 @@ responses:
           payload: '/user_deny'
 
   utter_ask_scheduled_meeting_correct_date:
-    - text: "Η ημερομηνίας που δήλωσες είναι: . Συμφωνείς;"
+    - text: "Η ημερομηνία που δήλωσες είναι: {scheduled_meeting_date}. Συμφωνείς;"
       buttons:
         - title: "Ναι"
           payload: '/user_affirm'
         - title: "Οχι"
           payload: '/user_deny'
+
+  utter_schedule_date_lt_gt_available:
+    - text: "Η ημερομηνία που δίαλεξες δεν είναι εντός του διαθέσιμου πλαισίου. Ας ξαναπροσπαθήσουμε!"
+
+  utter_inform_user_for_form_cancellation:
+    - text: "Το προηγούμενο αίτημα σου ακυρώθηκε."

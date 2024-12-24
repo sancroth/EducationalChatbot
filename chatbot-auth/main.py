@@ -49,7 +49,7 @@ def login():
 
         # Retrieve user information
         query = """
-        SELECT u.user_id as uid, r.role_id, d.name as department, d.key as department_key, u.gender, uc.password_hash
+        SELECT u.user_id as uid, r.role_id, d.name as department,d.id as department_id, d.key as department_key, u.gender, uc.password_hash
         FROM user_credentials uc
         JOIN users u ON uc.user_id = u.user_id
         JOIN departments d ON u.department_id = d.id
@@ -62,7 +62,7 @@ def login():
         if not user:
             return jsonify({"error": "Invalid email or password."}), 401
 
-        uid, role_id, department, department_key, gender, password_hash = user
+        uid, role_id, department, department_id, department_key, gender, password_hash = user
 
         # Verify password
         print(password)
@@ -75,6 +75,7 @@ def login():
                 "uid": uid,
                 "role_id": role_id,
                 "department": department,
+                "department_id": department_id,
                 "department_key": department_key,
                 "gender": gender,
                 "authenticated": True

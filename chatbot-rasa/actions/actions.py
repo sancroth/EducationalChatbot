@@ -53,6 +53,7 @@ class ActionInitializeUser(Action):
 
         uid = custom_data.get("uid", "unknown")
         role_id = custom_data.get("role_id", "unknown")
+        department_id = custom_data.get("department_id", None)
         department_key = custom_data.get("department_key", "unknown")
         authenticated = custom_data.get("authenticated", False)
 
@@ -66,6 +67,7 @@ class ActionInitializeUser(Action):
         return [
             SlotSet("uid", uid),
             SlotSet("role_id", role_id),
+            SlotSet("department_id", department_id),
             SlotSet("department_key", department_key),
             SlotSet("authenticated", authenticated)
         ]
@@ -336,33 +338,65 @@ class ActionUpdateOpenAIDetailLevel(Action):
 class ValidateScheduledMeetingWithTeacherForm(FormValidationAction):
     def name(self) -> Text:
         return "validate_scheduled_meeting_with_teacher_form"
-    
-    def validate_scheduled_meeting_correct_teacher_email(
-        self,
-        slot_value: Any,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: DomainDict,
-    ) -> Dict[Text, Any]:
-        print("trexo validate correct email")
-        print(tracker.get_slot("scheduled_meeting_correct_teacher_email"))
-        if tracker.get_slot("scheduled_meeting_correct_teacher_email"):
-            return {"scheduled_meeting_teacher_email": tracker.get_slot("scheduled_meeting_teacher_email"), "scheduled_meeting_correct_teacher_email": True}
-        return {"scheduled_meeting_teacher_email": None, "scheduled_meeting_correct_teacher_email": None}
-    
 
-    def validate_scheduled_meeting_correct_date(
+    # async def required_slots(self, domain_slots, dispatcher, tracker, domain):
+    #     updated_slots = domain_slots.copy()
+    #     if tracker.get_slot("scheduled_meeting_correct_teacher_email"):
+    #         print("Preparing minx/max date slots")
+    #         updated_slots = ["scheduled_meeting_min_date","scheduled_meeting_max_date"] + updated_slots
+    #     print(updated_slots)
+    #     return updated_slots
+
+    async def extract_scheduled_meeting_min_date(
+        self, 
+        dispatcher: CollectingDispatcher, 
+        tracker: Tracker, 
+        domain: Dict
+    ) -> Dict[Text, Any]:
+        today = datetime.today()
+        min_date = (today + timedelta(days=1)).strftime("%d/%m/%Y")
+        print(f"Min Date: {min_date}")
+        return {
+            "scheduled_meeting_min_date": min_date,
+        }
+
+    def validate_scheduled_meeting_min_date(
         self,
         slot_value: Any,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
         domain: DomainDict,
     ) -> Dict[Text, Any]:
-        print("trexo validate correct date")
-        print(tracker.get_slot("scheduled_meeting_correct_date"))
-        if tracker.get_slot("scheduled_meeting_correct_date"):
-            return {"scheduled_meeting_date": tracker.get_slot("scheduled_meeting_teacher_email"), "scheduled_meeting_correct_date": True}
-        return {"scheduled_meeting_date": None, "scheduled_meeting_correct_date": None}
+        today = datetime.today()
+        min_date = (today + timedelta(days=1)).strftime("%d/%m/%Y")
+        max_date = (today + timedelta(days=30)).strftime("%d/%m/%Y")
+        return {
+            "scheduled_meeting_min_date": slot_value
+        }
+
+    async def extract_scheduled_meeting_max_date(
+        self, 
+        dispatcher: CollectingDispatcher, 
+        tracker: Tracker, 
+        domain: Dict
+    ) -> Dict[Text, Any]:
+        today = datetime.today()
+        max_date = (today + timedelta(days=30)).strftime("%d/%m/%Y")
+        print(f"Max Date: {max_date}")
+        return {
+            "scheduled_meeting_max_date": max_date,
+        }
+
+    def validate_scheduled_meeting_max_date(
+        self,
+        slot_value: Any,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: DomainDict,
+    ) -> Dict[Text, Any]:
+        return {
+            "scheduled_meeting_max_date": slot_value
+        }
 
     def validate_scheduled_meeting_teacher_email(
         self,
@@ -372,13 +406,53 @@ class ValidateScheduledMeetingWithTeacherForm(FormValidationAction):
         domain: DomainDict,
     ) -> Dict[Text, Any]:
         try:
-            print("mpika validate email")
-            if slot_value=="senounta@uniwa.gr":
+            if "@uniwa.gr" in slot_value:
                 return {"scheduled_meeting_teacher_email": slot_value}
             else:
+                dispatcher.utter_message(response="utter_scheluded_meeting_teach_email_deny")
                 return {"scheduled_meeting_teacher_email": None}
         except ValueError:
             return {"scheduled_meeting_teacher_email": None}
+
+    def validate_scheduled_meeting_correct_teacher_email(
+        self,
+        slot_value: Any,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: DomainDict,
+    ) -> Dict[Text, Any]:
+        try:
+            if tracker.get_slot("scheduled_meeting_correct_teacher_email"):
+
+                conn = psycopg2.connect(**DB_CONFIG)
+                cur = conn.cursor()
+
+                department_id = tracker.get_slot("department_id")
+                teacher_email = tracker.get_slot("scheduled_meeting_teacher_email")
+
+                # Query to check if the email exists with role_id=2 and department_id
+                query = """
+                    SELECT COUNT(*) 
+                    FROM users 
+                    WHERE email = %s AND role_id = 2 AND department_id = %s;
+                """
+                print("fetching teacher with given email")
+                cur.execute(query, (teacher_email, department_id))
+                result = cur.fetchone()
+                if result and result[0] > 0:
+                    print(f"total found: {result[0]}")
+                    dispatcher.utter_message(response="utter_scheduled_meeting_teach_email_found")
+                    return {"scheduled_meeting_teacher_email": tracker.get_slot("scheduled_meeting_teacher_email"), "scheduled_meeting_correct_teacher_email": True}
+                else:
+                    print("teacher not found")
+                    dispatcher.utter_message(response="utter_scheduled_meeting_teach_email_not_found")
+                    return {"scheduled_meeting_teacher_email": None, "scheduled_meeting_correct_teacher_email": None}
+            else:
+                return {"scheduled_meeting_teacher_email": None, "scheduled_meeting_correct_teacher_email": None}
+        except Exception as e:
+            dispatcher.utter_message(text="Υπήρξε ένα σφάλμα κατά την επαλήθευση του email.")
+            print(f"Database error: {e}")
+            return {"scheduled_meeting_teacher_email": None, "scheduled_meeting_correct_teacher_email": None}
 
     def validate_scheduled_meeting_date(
         self,
@@ -390,21 +464,39 @@ class ValidateScheduledMeetingWithTeacherForm(FormValidationAction):
         """Validate cuisine value."""
         try:
             date_obj = datetime.strptime(slot_value, "%d/%m/%Y")
-
-            # Get the current date
             today = datetime.today()
-
-            # Define the minimum and maximum range
             min_date = today + timedelta(days=1)
             max_date = today + timedelta(days=30)
-
-            # Check if the date is within the range
-            if min_date <= date_obj <= max_date:
-                return {"scheduled_meeting_date": slot_value}
+            if  min_date > date_obj or max_date < date_obj:
+                dispatcher.utter_message(response="utter_schedule_date_lt_gt_available")
+                return {"scheduled_meeting_date": None ,
+                        "scheduled_meeting_correct_date": None,
+                        "scheduled_meeting_min_date": None,
+                        "scheduled_meeting_max_date": None
+                       }
             else:
-                return {"scheduled_meeting_date": None }
+                return {"scheduled_meeting_date": slot_value}
         except ValueError:
-            return {"scheduled_meeting_date": None }
+            return {"scheduled_meeting_date": None ,
+                    "scheduled_meeting_correct_date": None,
+                    "scheduled_meeting_min_date": None,
+                    "scheduled_meeting_max_date": None
+                    }
+
+    def validate_scheduled_meeting_correct_date(
+        self,
+        slot_value: Any,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: DomainDict,
+    ) -> Dict[Text, Any]:
+        if tracker.get_slot("scheduled_meeting_correct_date"):
+            return {"scheduled_meeting_date": tracker.get_slot("scheduled_meeting_teacher_email"), "scheduled_meeting_correct_date": True}
+        return {"scheduled_meeting_date": None, 
+                "scheduled_meeting_correct_date": None, 
+                "scheduled_meeting_min_date": None, 
+                "scheduled_meeting_max_date": None
+                }
 
 class ActionScheduleMeetingWithTeacher(Action):
     def name(self) -> str:
@@ -414,12 +506,25 @@ class ActionScheduleMeetingWithTeacher(Action):
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
+        dispatcher.utter_message(response="utter_confirm_meeting_with_teacher_scheduled")
+        return []
+
+class ActionScheduleMeetingWithTeacherReset(Action):
+    def name(self) -> str:
+        return "action_schedule_meeting_with_teacher_reset"
+
+    def run(self,  dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
         # reset all related slots
-        print("OLA KALA")
+        print("resetting form data for schedule_meeting_with_teacher")
         
         return [
             SlotSet("scheduled_meeting_teacher_email", None),
             SlotSet("scheduled_meeting_correct_teacher_email", None),
             SlotSet("scheduled_meeting_date", None),
-            SlotSet("scheduled_meeting_correct_date",None)
+            SlotSet("scheduled_meeting_correct_date",None),
+            SlotSet("scheduled_meeting_min_date", None),
+            SlotSet("scheduled_meeting_max_date", None)
         ]

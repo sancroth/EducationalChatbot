@@ -127,93 +127,34 @@ stories:
     - action: action_deactivate_loop
     - active_loop: null
 
-# - story: User schedule meeting with teacher form full
-#   steps:
-#   - intent: user_request_scheduled_meeting_with_teacher
-#   - action: scheduled_meeting_with_teacher_form
-#   - active_loop: scheduled_meeting_with_teacher_form
-#   - action: action_listen
-#   - slot_was_set:
-#       - requested_slot: scheduled_meeting_teacher_email
-#   - action: utter_ask_scheduled_meeting_correct_teacher_email
-#   - intent: user_affirm
-#   - slot_was_set:
-#       - scheduled_meeting_correct_teacher_email: True
-#   - action: action_listen
-#   - slot_was_set:
-#       - requested_slot: scheduled_meeting_date
-#   - action: utter_ask_scheduled_meeting_correct_date
-#   - intent: user_affirm
-#   - slot_was_set:
-#       - scheduled_meeting_correct_date: True
-#   - action: action_deactivate_loop
-#   - active_loop: null
-#   - action: action_schedule_meeting_with_teacher
-#   - action: utter_confirm_meeting_with_teacher_scheduled
-#   - action: utter_followup_offer_help
-
-# - story: User interrupts the schedule meeting form before supplying email
-#   steps:
-#   - intent: user_request_scheduled_meeting_with_teacher
-#   - action: scheduled_meeting_with_teacher_form
-#   - active_loop: action_listen
-#   - slot_was_set:
-#       - requested_slot: scheduled_meeting_teacher_email
-#   - action: utter_ask_scheduled_meeting_correct_teacher_email
-#   - intent: user_cancel_request
-#   - action: utter_confirm_cancel
-#   - action: action_deactivate_loop
-#   - active_loop: null
-#   - action: utter_followup_offer_help
-
-# - story: User interrupts the schedule meeting form after supplying email and before confirming date
-#   steps:
-#   - intent: user_request_scheduled_meeting_with_teacher
-#   - action: scheduled_meeting_with_teacher_form
-#   - active_loop: scheduled_meeting_with_teacher_form
-#   - action: action_listen
-#   - slot_was_set:
-#       - requested_slot: scheduled_meeting_teacher_email
-#   - action: utter_ask_scheduled_meeting_correct_teacher_email
-#   - intent: user_affirm
-#   - slot_was_set:
-#       - scheduled_meeting_correct_teacher_email: True
-#   - action: action_listen
-#   - slot_was_set:
-#       - requested_slot: scheduled_meeting_date
-#   - action: utter_ask_scheduled_meeting_correct_date
-#   - intent: user_cancel_request
-#   - action: utter_confirm_cancel
-#   - action: action_deactivate_loop
-#   - active_loop: null
-#   - action: utter_followup_offer_help
-
-# - story: User interrupts the schedule meeting form after supplying email and before supplying date
-#   steps:
-#   - intent: user_request_scheduled_meeting_with_teacher
-#   - action: scheduled_meeting_with_teacher_form
-#   - active_loop: scheduled_meeting_with_teacher_form
-#   - action: action_listen
-#   - slot_was_set:
-#       - requested_slot: scheduled_meeting_teacher_email
-#   - action: utter_ask_scheduled_meeting_correct_teacher_email
-#   - intent: user_affirm
-#   - slot_was_set:
-#       - scheduled_meeting_correct_teacher_email: True
-#   - action: action_listen
-#   - intent: user_cancel_request
-#   - action: utter_confirm_cancel
-#   - action: action_deactivate_loop
-#   - active_loop: null
-#   - action: utter_followup_offer_help
-
-# - story: User interrupts the schedule meeting form as soon as it starts
-#   steps:
-#   - intent: user_request_scheduled_meeting_with_teacher
-#   - action: scheduled_meeting_with_teacher_form
-#   - active_loop: scheduled_meeting_with_teacher_form
-#   - intent: user_cancel_request
-#   - action: utter_confirm_cancel
-#   - action: action_deactivate_loop
-#   - active_loop: null
-#   - action: utter_followup_offer_help
+- story: interactive_story_1
+  steps:
+  - intent: user_request_scheduled_meeting_with_teacher
+  - action: scheduled_meeting_with_teacher_form
+  - active_loop: scheduled_meeting_with_teacher_form
+  - slot_was_set:
+    - scheduled_meeting_min_date: 26/12/2024
+  - slot_was_set:
+    - scheduled_meeting_max_date: 24/01/2025
+  - slot_was_set:
+    - requested_slot: scheduled_meeting_teacher_email
+  - intent: user_cancel_request
+  - action: action_schedule_meeting_with_teacher_reset
+  - slot_was_set:
+    - scheduled_meeting_teacher_email: null
+  - slot_was_set:
+    - scheduled_meeting_correct_teacher_email: null
+  - slot_was_set:
+    - scheduled_meeting_date: null
+  - slot_was_set:
+    - scheduled_meeting_correct_date: null
+  - slot_was_set:
+    - scheduled_meeting_min_date: null
+  - slot_was_set:
+    - scheduled_meeting_max_date: null
+  - action: utter_confirm_cancel
+  - action: action_deactivate_loop
+  - active_loop: null
+  - slot_was_set:
+    - requested_slot: null
+  - action: utter_followup_offer_help

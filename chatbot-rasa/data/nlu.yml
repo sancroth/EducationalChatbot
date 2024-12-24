@@ -1,11 +1,4 @@
 version: "3.1"
-
-regex:
-- name: university_email
-  pattern: "[A-Za-z0-9_]+@(uniwa\\.gr)$"
-- name: date
-  pattern: \b\d{2}/\d{2}/\d{4}\b
-  
 nlu:
 - intent: initialize
   examples: |
@@ -27,6 +20,7 @@ nlu:
     - Ακύρωση αιτήματος
     - ακύρωση φόρμας
     - ακυρωση φορμας
+    - ακυρο
 - intent: user_request_scheduled_meeting_with_teacher
   examples: |
     - Θα ήθελα να κλείσω ένα ραντεβού με τον καθηγητή μου.
@@ -79,6 +73,12 @@ nlu:
     - Το email της καθηγήτριας είναι [randomakis@uniwa.gr](university_email)
     - Το mail του καθηγητη ειναι [random@uniwa.gr](university_email)
     - Μπορείτε να στείλετε email στο [kazakakis@uniwa.gr](university_email)
+    - [test@gmail.com](university_email)
+    - [test@gmail.gr](university_email)
+    - [test@hotmail.com](university_email)
+    - [test@hotmail.gr](university_email)
+    - [test@outlook.com](university_email)
+    - [test@outlook.gr](university_email)
 - intent: provide_date
   examples: |
     - Η ημερομηνία είναι [23/12/2023](date)
@@ -103,6 +103,8 @@ nlu:
     - Στις [22/12/2023](date) θέλω να το κανονισουμε.
     - Στις [22/12/2023](date)
     - Νομίζω στις [01/12/2023](date)
+    - [22/1/2024](date)
+    - [23/01/2025](date)
 - intent: greet
   examples: |
     - Γεια σου
@@ -129,6 +131,7 @@ nlu:
     - /deny_persist_level_of_detail
 - intent: ask_educational_question
   examples: |
+    - Τι είναι η java
     - τι ειναι η java
     - τι γνωριζεις για τη java
     - τι γνωριζεις για τη γλωσσα προγραμματισμου javascript
@@ -512,7 +515,6 @@ nlu:
     - Ναι σωστά
     - Ναι ναι
     - βεβαίως
-    - βέβαια
     - συμφωνώ
     - Συμφωνω
     - φαίνεται σωστό

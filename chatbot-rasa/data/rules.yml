@@ -64,7 +64,7 @@ rules:
   - slot_was_set:
     - requested_slot: null
   - action: action_schedule_meeting_with_teacher
-  - action: utter_confirm_meeting_with_teacher_scheduled
+  - action: action_schedule_meeting_with_teacher_reset
 
 - rule: User cancels teacher meeting form request
   condition:
@@ -74,5 +74,6 @@ rules:
   - active_loop: null
   - slot_was_set:
     - requested_slot: null
+  - action: action_schedule_meeting_with_teacher_reset
   - action: utter_confirm_cancel
   - action: utter_followup_offer_help

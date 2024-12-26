@@ -9,72 +9,56 @@
 
 <body>
 <script>
+    let initWebChat = () => {
+        try {
+            let token = localStorage.getItem("access_token");
+            if (!token) throw new Error("Token not found");
 
-            // Function to initialize or reinitialize the Rasa WebChat
-            let initWebChat = () => {
-                try {
-                    let token = localStorage.getItem("access_token");
-                    if (!token) throw new Error("Token not found");
+            let payload = JSON.parse(atob(token.split(".")[1]));
 
-                    let payload = JSON.parse(atob(token.split(".")[1]));
+            let isExpired = Date.now() >= payload.exp * 1000;
+            if (isExpired) throw new Error("Token expired");
 
-                    let isExpired = Date.now() >= payload.exp * 1000;
-                    if (isExpired) throw new Error("Token expired");
+            console.log("Initializing Rasa WebChat...");
+            window.WebChat.default({
+                customData: {
+                    language: "el",
+                    uid: payload.uid,
+                    role_id: payload.role_id,
+                    department_id: payload.department_id,
+                    department_key: payload.department_key,
+                    authenticated: payload.authenticated,
+                },
+                initPayload: "/initialize",
+                socketUrl: "__RASA_SERVER__",
+                socketPath: "/socket.io/",
+                title: "Educational Assistant",
+                profileAvatar: "__NGINX_SERVER__/static/bot.webp",
+                showMessageDate: true,
+                inputTextFieldHint: "Γράψε μου κάτι...",
+                showFullScreenButton: true,
+            });
+        } catch (e) {
+            console.error("JWT validation failed:", e);
+            alert("Authentication required. Please log in again.");
+            localStorage.removeItem("access_token");
+            window.location.href = "/auth"; 
+        }
+    };
 
-                    console.log("Initializing Rasa WebChat...");
-                    window.WebChat.default({
-                        customData: {
-                            language: "el",
-                            uid: payload.sub.uid,
-                            role_id: payload.sub.role_id,
-                            department_id: payload.sub.department_id,
-                            department_key: payload.sub.department_key,
-                            authenticated: payload.sub.authenticated,
-                        },
-                        initPayload: "/initialize",
-                        socketUrl: "__RASA_SERVER__",
-                        title: "Educational Assistant",
-                        profileAvatar: "__NGINX_SERVER__/static/bot.webp",
-                        showMessageDate: true,
-                        inputTextFieldHint: "Γράψε μου κατι...",
-                        showFullScreenButton: true,
-                    });
+    const loadWebChat = () => {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/rasa-webchat@1.0.1/lib/index.js";
+        script.async = true;
+        script.onload = initWebChat;
+        document.head.appendChild(script);
+    };
 
-                } catch (e) {
-                    console.error("JWT validation failed:", e);
-                    alert("Authentication required. Please log in again.");
-                    localStorage.removeItem("access_token");
-                    window.location.href = "/auth"; // Redirect to login page
-                }
-            };
-
-
-            // Check if the Rasa WebChat script is already loaded
-            const existingScript = document.querySelector(
-                'script[src="https://cdn.jsdelivr.net/npm/rasa-webchat@1.0.1/lib/index.js"]'
-            );
-
-            if (!existingScript) {
-                // Create and append the script tag if it doesn't exist
-                console.log("Itilizing webchat")
-                const e = document.createElement("script"),
-                    t = document.head || document.getElementsByTagName("head")[0];
-
-                e.src = "https://cdn.jsdelivr.net/npm/rasa-webchat@1.0.1/lib/index.js";
-                e.async = true;
-
-                // Initialize WebChat after script loads
-                e.onload = initWebChat;
-
-                t.insertBefore(e, t.firstChild);
-            } else if (window.WebChat && window.WebChat.default) {
-                // Reinitialize WebChat if the script is already loaded
-                console.log("Reinitilizing webchat")
-                initWebChat();
-            } else {
-                console.error("Failed to initialize Rasa WebChat. Script not loaded yet.");
-            }
-
+    if (typeof window.WebChat === "undefined") {
+        loadWebChat();
+    } else {
+        initWebChat();
+    }
 </script>
 </body>
 </html>

@@ -42,7 +42,7 @@
             console.error("JWT validation failed:", e);
             alert("Authentication required. Please log in again.");
             localStorage.removeItem("access_token");
-            window.location.href = "/auth"; 
+            window.location.href = "__AUTH_SERVER__"; 
         }
     };
 

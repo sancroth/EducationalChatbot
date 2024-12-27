@@ -27,29 +27,39 @@
 				<form class="form">
 					<p class="fieldset">
 						<label class="image-replace email" for="signin-email">E-mail</label>
+						<select id="predefined-emails" class="full-width has-padding has-border">
+							<option value="" disabled selected>Select a predefined email</option>
+							<option value="ice1@uniwa.gr">ice1@uniwa.gr</option>
+							<option value="ice3@uniwa.gr">ice3@uniwa.gr</option>
+							<option value="ice5@uniwa.gr">ice5@uniwa.gr</option>
+							<option value="ice7@uniwa.gr">ice7@uniwa.gr</option>
+							<option value="lib2@uniwa.gr">lib2@uniwa.gr</option>
+							<option value="lib4@uniwa.gr">lib4@uniwa.gr</option>
+							<option value="lib5@uniwa.gr">lib5@uniwa.gr</option>
+							<option value="lib8@uniwa.gr">lib8@uniwa.gr</option>
+						</select>
 						<input class="full-width has-padding has-border" id="signin-email" type="email" placeholder="E-mail">
-						<span class="error-message">An account with this email address does not exist!</span>
+						<span class="error-message">Please select or enter a valid email!</span>
 					</p>
-
+			
 					<p class="fieldset">
 						<label class="image-replace password" for="signin-password">Password</label>
-						<input class="full-width has-padding has-border" id="signin-password" type="password"  placeholder="Password">
+						<input class="full-width has-padding has-border" id="signin-password" type="password" placeholder="Password">
 						<a href="#0" class="hide-password">Show</a>
 						<span class="error-message">Wrong password! Try again.</span>
 					</p>
-
+			
 					<p class="fieldset">
 						<input type="checkbox" id="remember-me" checked>
 						<label for="remember-me">Remember me</label>
 					</p>
-
+			
 					<p class="fieldset">
 						<input class="full-width" type="submit" value="Login">
 					</p>
 				</form>
-				
+			
 				<p class="form-bottom-message"><a href="#0">Forgot your password?</a></p>
-				<!-- <a href="#0" class="close-form">Close</a> -->
 			</div>
 
 			<div id="signup">

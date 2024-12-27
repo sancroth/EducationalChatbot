@@ -9,6 +9,8 @@ jQuery(document).ready(function($){
     $forgot_password_link = $form_login.find('.form-bottom-message a'),
     $back_to_login_link = $form_forgot_password.find('.form-bottom-message a'),
     $main_nav = $('.main-nav');
+    $predefined_emails = $('#predefined-emails'),
+    $signin_email = $('#signin-email');
 
   //open modal
   $main_nav.on('click', function(event){
@@ -44,6 +46,12 @@ jQuery(document).ready(function($){
   $form_modal_tab.on('click', function(event) {
     event.preventDefault();
     ( $(event.target).is( $tab_login ) ) ? login_selected() : signup_selected();
+  });
+
+  // Populate email input when selecting predefined email
+  $predefined_emails.on('change', function () {
+      var selectedEmail = $(this).val();
+      $signin_email.val(selectedEmail);
   });
 
   //hide or show password

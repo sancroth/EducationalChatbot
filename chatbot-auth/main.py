@@ -79,6 +79,12 @@ def login():
                 "department_key": department_key,
                 "gender": gender,
                 "authenticated": True
+            },
+            additional_claims={
+                "user": {
+                    "username": uid, 
+                    "role": "user"
+                }
             }
         )
         if conn:

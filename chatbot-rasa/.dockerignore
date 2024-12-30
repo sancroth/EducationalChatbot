@@ -1,2 +1,4 @@
 .env
 .rasa_env
+Dockerfile
+Dockerfile-actions

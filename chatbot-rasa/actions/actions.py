@@ -21,11 +21,11 @@ from openai import OpenAI
 from rasa_sdk.events import EventType
 
 DB_CONFIG = {
-    "dbname":"ice",
-    "user":"postgres",
-    "password":"mysecretpassword",
-    "host":"localhost",
-    "port":"5432"
+    "dbname": os.getenv("DB_NAME", "ice"),
+    "user": os.getenv("DB_USER", "postgres"),
+    "password": os.getenv("DB_PASSWORD", "mysecretpassword"),
+    "host": os.getenv("DB_HOST", "postgres"),
+    "port": os.getenv("DB_PORT", "5432")
 }
 
 class ActionDefaultFallback(Action):

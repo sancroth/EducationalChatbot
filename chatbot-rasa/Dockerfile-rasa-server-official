@@ -1,0 +1,15 @@
+FROM rasa/rasa:3.6.20-full
+
+WORKDIR /app
+
+COPY . .
+
+USER root
+
+RUN python -m spacy download el_core_news_md &&\
+    chown rasa:rasa /app -R &&\
+    rasa train --force
+
+USER rasa
+
+EXPOSE 5005

@@ -1,4 +1,7 @@
 chatbot/
+chatbot-rasa/.cache/
+chatbot-rasa/.keras/
+chatbot-rasa/.config/
 chatbot-rasa/models/
 chatbot-rasa/.rasa/
 chatbot-rasa/.rasa_env

@@ -46,12 +46,15 @@ services:
     pull_policy: if_not_present
     container_name: chatbot-nginx
     ports:
-      - "8888:8888"
-      - "8889:8889"
+      - "443:443"
+      - "80:80"
     environment:
       NGINX_SERVER: ${NGINX_SERVER_URL}
       RASA_SERVER: ${RASA_SERVER_URL}
       AUTH_SERVER: ${AUTH_SERVER_URL}
+    depends_on:
+      - chatbot-auth
+      - rasa-server
     networks:
       - chatbot_network
     volumes:
@@ -59,6 +62,42 @@ services:
       - /etc/letsencrypt/archive:/etc/letsencrypt/archive
       - ./chatbot-nginx/sites_ssl.conf:/etc/nginx/conf.d/sites.conf
       - ./chatbot-nginx/ssl.conf:/etc/nginx/ssl.conf
+  rasa-actions:
+    image: test-rasa
+    pull_policy: if_not_present
+    container_name: rasa-actions
+#    command: "start --actions actions --cors '*' --debug"
+    ports:
+      - "127.0.0.1:5055:5055"
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      ROLE: 'action'
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      PYTHONUNBUFFERED: 1
+    networks:
+      - chatbot_network
+    volumes:
+      - ./chatbot-rasa/actions:/app/actions
+  rasa-server:
+    image: test-rasa
+    pull_policy: if_not_present
+#    command: "run -m models --enable-api --cors '${RASA_CORS}' --debug"
+    container_name: rasa-server
+    environment:
+      ROLE: 'rasa'
+      RASA_CORS: ${RASA_CORS}
+    depends_on:
+      - rasa-actions
+    ports:
+      - "127.0.0.1:5005:5005"
+    networks:
+      - chatbot_network
+    volumes:
+      - ./chatbot-rasa:/app
   # rasa-server:
   #   image: chatbot-rasa:latest
   #   pull_policy: if_not_present

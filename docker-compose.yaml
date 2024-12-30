@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: mysecretpassword
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - ./pg_data:/var/lib/postgresql/data:rw,uid=999,gid=999
+      - ./pg_data:/var/lib/postgresql/data
     networks:
       - chatbot_network
   pgadmin:

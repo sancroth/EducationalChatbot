@@ -23,11 +23,11 @@
             window.WebChat.default({
                 customData: {
                     language: "el",
-                    uid: payload.uid,
-                    role_id: payload.role_id,
-                    department_id: payload.department_id,
-                    department_key: payload.department_key,
-                    authenticated: payload.authenticated,
+                    uid: payload.sub.uid,
+                    role_id: payload.sub.role_id,
+                    department_id: payload.sub.department_id,
+                    department_key: payload.sub.department_key,
+                    authenticated: payload.sub.authenticated,
                 },
                 initPayload: "/initialize",
                 socketUrl: "__RASA_SERVER__",
@@ -42,7 +42,7 @@
             console.error("JWT validation failed:", e);
             alert("Authentication required. Please log in again.");
             localStorage.removeItem("access_token");
-            window.location.href = "__AUTH_SERVER__"; 
+            window.location.href = "/auth"; 
         }
     };
 

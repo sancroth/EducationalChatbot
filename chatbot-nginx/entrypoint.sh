@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export $(cat .env | xargs)
-
 if [[ -z "$NGINX_SERVER" || -z "$RASA_SERVER" || -z "$AUTH_SERVER" ]]; then
   echo "Error: NGINX_SERVER or RASA_SERVER environment variable is not set."
   exit 1

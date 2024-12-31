@@ -77,3 +77,15 @@ rules:
   - action: action_schedule_meeting_with_teacher_reset
   - action: utter_confirm_cancel
   - action: utter_followup_offer_help
+
+- rule: Apologetic bot response
+  steps:
+  - intent: user_express_disbelief_in_bot
+  - action: utter_bot_apology
+
+- rule: question_ability_to_help
+  steps:
+  - intent: user_question_ability_to_help
+  - action: utter_bot_reassure_user
+  - action: utter_list_bot_options
+  - action: utter_followup_offer_help

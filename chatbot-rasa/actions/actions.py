@@ -40,6 +40,17 @@ class ActionDefaultFallback(Action):
         # Revert the user's input to allow them to rephrase
         return [UserUtteranceReverted()]
 
+class ActionOfferedFollowUpHelp(Action):
+    def name(self) -> str:
+        return "action_bot_offered_followup_help"
+
+    def run(self,  dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        # Send fallback message
+        # Revert the user's input to allow them to rephrase
+        return [SlotSet("offered_follow_up_help_once", True)]
+
 class ActionInitializeUser(Action):
 
     def name(self) -> str:

@@ -152,7 +152,7 @@ class ActionGetNextCourseDate(Action):
         if today.weekday>4:
             next_day=1
             check_against_current_time=False
-        while(!course_day_found):
+        while(not course_day_found):
             formatted_query = cur.mogrify(
                 query, 
                 (user_id, next_day,user_team)

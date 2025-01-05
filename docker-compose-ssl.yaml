@@ -5,6 +5,7 @@ services:
     user: "999:999"
     image: postgres:latest
     container_name: chatbot-postgres
+    command: ["postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"]
     ports:
       - "127.0.0.1:5432:5432"
     environment:
@@ -22,6 +23,7 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_CONFIG_CONSOLE_LOG_LEVEL: 10
     networks:
       - chatbot_network
   chatbot-auth:

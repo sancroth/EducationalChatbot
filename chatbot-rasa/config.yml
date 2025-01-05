@@ -19,11 +19,11 @@ pipeline:
   #   constrain_similarities: true
 
 # # config for spacyNLP and bert models
-  - name: "SpacyNLP"
-    model: "el_core_news_md"
+  - name: SpacyNLP
+    model: el_core_news_md
     case_sensitive: False
-  - name: "SpacyTokenizer"
-  - name: "SpacyFeaturizer"
+  - name: SpacyTokenizer
+  - name: SpacyFeaturizer
     pooling: max
   - name: CountVectorsFeaturizer
   - name: CountVectorsFeaturizer
@@ -31,8 +31,8 @@ pipeline:
     min_ngram: 1
     max_ngram: 4
   - name: LanguageModelFeaturizer
-    model_name: "bert"
-    model_weights: "nlpaueb/bert-base-greek-uncased-v1"
+    model_name: bert
+    model_weights: nlpaueb/bert-base-greek-uncased-v1
   - name: DIETClassifier
     epochs: 50
     constrain_similarities: True

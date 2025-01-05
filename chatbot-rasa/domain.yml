@@ -10,6 +10,7 @@ intents:
   - chitchat
   - ask_bot_supplied_services
   - ask_help
+  - user_asks_next_scheduled_class
   - user_asks_schedule_rest_of_the_week
   - get_department_secretariat_info
   - get_department_secretariat_phone
@@ -27,6 +28,14 @@ intents:
   - user_request_scheduled_meeting_with_teacher
   - provide_date
   - provide_university_email
+  - user_question_ability_to_help
+  - user_express_disbelief_in_bot
+  - ask_next_course_schedule_by_course_name
+  - ask_course_classroom_by_course_name
+  - ask_course_teacher_by_course_name
+  - ask_next_course_schedule_generic
+  - ask_next_course_schedule_today
+  - ask_date_of_next_course
 actions:
   - validate_department
   - action_initialize_user
@@ -38,6 +47,7 @@ actions:
   - action_schedule_meeting_with_teacher
   - action_schedule_meeting_with_teacher_reset
   - validate_scheduled_meeting_with_teacher_form
+  - action_bot_offered_followup_help
 forms:
   scheduled_meeting_with_teacher_form:
     required_slots:
@@ -52,6 +62,7 @@ entities:
   - department
   - university_email
   - date
+  - course_name
 
 slots:
   uid:
@@ -101,7 +112,14 @@ slots:
     initial_value: false
     influence_conversation: true
     mappings:
-      - type: custom  # Specify custom mapping since it's controlled by actions
+      - type: custom
+
+  offered_follow_up_help_once:
+    type: bool
+    initial_value: false
+    influence_conversation: true
+    mappings:
+      - type: custom
 
   user_replied_to_persist_level_of_detail:
     type: bool
@@ -131,6 +149,32 @@ slots:
         conditions:
         - active_loop: scheduled_meeting_with_teacher_form
           requested_slot: scheduled_meeting_teacher_email
+
+  course_name:
+    type: text
+    initial_value: None
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: course_name
+
+  last_course_name_provided_by_bot:
+    type: text
+    initial_value: None
+    mappings:
+      - type: custom 
+
+  last_teacher_name_provided_by_bot:
+    type: text
+    initial_value: None
+    mappings:
+      - type: custom 
+
+  last_classroom_provided_by_bot:
+    type: text
+    initial_value: None
+    mappings:
+      - type: custom 
 
   scheduled_meeting_date:
     type: text
@@ -231,6 +275,11 @@ responses:
   - text: Θα έλεγα πως ή μέρα μου ήταν υπέροχη μέχρι τώρα. Έχω απαντήσει επιτυχώς σε πάρα πολλά ερωτήματα και αυτό με κάνει χαρούμενο!
 
   utter_followup_offer_help:
+    - condition:
+      - type: slot
+        name: offered_follow_up_help_once
+        value: true
+      text: "Υπάρχει κάτι άλλο που μπορώ να κάνω για εσένα;"
     - text: "Πες μου, τι μπορώ να κάνω για εσένα;"
     - text: "Υπάρχει κάτι με το οποίο μπορώ να σε βοήθησω;"
     - text: "Πως μπορώ να σε βοηθήσω;"
@@ -315,3 +364,21 @@ responses:
 
   utter_inform_user_for_form_cancellation:
     - text: "Το προηγούμενο αίτημα σου ακυρώθηκε."
+
+  utter_bot_apology:
+    - text: "Σου ζητώ συγγνώμη! Δυστηχώς ο δημιουργός μου δεν με έχει εκπαιδεύσει αρκετά ακόμα για να χειριστώ όλα τα δυνατά σενάρια μιας τέτοιας συνομιλίας! Σου υπόσχομαο ότι με το καιρό θα γίνω ο καλύτερος βοηθός!"
+
+  utter_bot_reassure_user:
+    - text: "Σου υπόσχομαι πως θα κάνω ότι περνάει από το ψηφιακό μου χέρι για να σε βοηθήσω!"
+  
+  utter_fetch_next_user_course:
+    - text: "Το επόμενο σου μάθημα είναι φυσική!"
+  
+  utter_fetch_next_user_course_by_course_name:
+    - text: "Εχεις αυτο το μαθημα ξανα τωρα!"
+
+  utter_fetch_classroom_of_course_by_course_name:
+    - text: "Στο αμφιθέατρο"
+
+  utter_fetch_teacher_of_course_by_course_name:
+    - text: "Φατουρος!"

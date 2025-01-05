@@ -174,7 +174,7 @@ class ActionGetNextCourseDate(Action):
                     dispatcher.utter_message(text=f"Αίθουσα: {classroom}, {start_time} με {end_time}")
                     course_day_found=True
                     break
-            if !course_day_found:
+            if not course_day_found:
                 next_day+=1
                 check_against_current_time=False
                 if next_day>5:

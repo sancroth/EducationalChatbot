@@ -81,7 +81,8 @@ rules:
 - rule: Fetch first next class
   steps:
   - intent: ask_next_course_schedule_generic
-  - action: utter_fetch_next_user_course
+  - action: action_get_date_of_next_course
+  - action: utter_followup_offer_help
 
 - rule: Fetch next course by name
   steps:

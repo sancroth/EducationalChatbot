@@ -48,6 +48,7 @@ actions:
   - action_schedule_meeting_with_teacher_reset
   - validate_scheduled_meeting_with_teacher_form
   - action_bot_offered_followup_help
+  - action_get_date_of_next_course
 forms:
   scheduled_meeting_with_teacher_form:
     required_slots:

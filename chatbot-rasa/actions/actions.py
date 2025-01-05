@@ -28,6 +28,18 @@ DB_CONFIG = {
     "port": os.getenv("DB_PORT", "5432")
 }
 
+days = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή"]
+
+def get_user_team(user_semester: int,user_id: int) -> int:
+    if user_semester == 1:
+        if user_id % 10 in (7, 8, 9):
+            return 2
+    else:
+        if user_id % 2 == 1:
+            return 2
+    return 1
+
+
 class ActionDefaultFallback(Action):
     def name(self) -> str:
         return "action_default_fallback"
@@ -104,7 +116,7 @@ class ActionSetUserRequiresBotOptions(Action):
             dispatcher.utter_message(text="Συγγνώμη, δεν σε κατάλαβα.")
             return []
 
-class ActionGetWeeklySchedule(Action):
+class ActionGetNextCourseDate(Action):
     def name(self) -> str:
         return "action_get_date_of_next_course"
 
@@ -117,20 +129,63 @@ class ActionGetWeeklySchedule(Action):
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
 
-
-        user_team = 1
         cur.execute(f"SELECT semester FROM student_info WHERE user_id = {user_id};")
         user_semester=cur.fetchone()[0]
-        if user_semester == 1:
-            if user_id % 10 in (7, 8, 9):
-                user_team=2
-        else:
-            if user_id % 2 == 1:
-                user_team=2
-
+        user_team = get_user_team(user_semester,user_id)
         today = datetime.now()
         print(f"user_team:{user_team}")
         print(f'date against {today.time()}')
+        
+        query = """
+        SELECT c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
+        FROM student_enrollments se
+        JOIN class_schedules cs ON se.class_id = cs.class_id
+        JOIN classes c ON cs.class_id = c.class_id
+        WHERE se.user_id = %s 
+        AND cs.day_of_week = %s
+        AND cs.class_team = %s
+        ORDER BY cs.day_of_week, cs.start_time;
+        """
+
+        course_day_found = False
+        check_against_current_time = True
+        if today.weekday>4:
+            next_day=1
+            check_against_current_time=False
+        while(!course_day_found):
+            formatted_query = cur.mogrify(
+                query, 
+                (user_id, next_day,user_team)
+            ).decode("utf-8")
+            print("Executing query:\n", formatted_query)
+
+            cur.execute(query, (user_id, next_day,user_team))
+            schedule = cur.fetchall()
+            if schedule:
+                for class_name, classroom, day_of_week, start_time, end_time in schedule:
+                    if (today.time()>start_time and check_against_current_time):
+                        continue
+                    days_ahead = ((day_of_week-1) - today.weekday() + 7) % 7
+                    next_date = today + timedelta(days=days_ahead)
+                    response = "Σου παραθέτω τις πληροφορίες για το επόμενο μάθημα που βρήκα στο πρόγραμμα σου!"
+                    dispatcher.utter_message(text=response)
+                    dispatcher.utter_message(text=f"Ημερομηνία: {next_date.strftime("%d/%m/%Y")}")
+                    dispatcher.utter_message(text=f"{days[day_of_week-1]}: {class_name}")
+                    dispatcher.utter_message(text=f"Αίθουσα: {classroom}, {start_time} με {end_time}")
+                    course_day_found=True
+                    break
+            if !course_day_found:
+                next_day+=1
+                check_against_current_time=False
+                if next_day>5:
+                    next_day=1
+            else:
+                response = "Δεν βρήκα κάποιο μάθημα στο πρόγραμμα σου! Αν πιστεύεις ότι αυτό είναι λάθος, παρακαλώ επικοινώνησε με τη γραμματεία του τμήματος."
+                dispatcher.utter_message(text=response)
+        cur.close()
+        conn.close()
+
+        return []
 
 class ActionGetWeeklySchedule(Action):
     def name(self) -> str:
@@ -145,16 +200,9 @@ class ActionGetWeeklySchedule(Action):
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
 
-
-        user_team = 1
         cur.execute(f"SELECT semester FROM student_info WHERE user_id = {user_id};")
         user_semester=cur.fetchone()[0]
-        if user_semester == 1:
-            if user_id % 10 in (7, 8, 9):
-                user_team=2
-        else:
-            if user_id % 2 == 1:
-                user_team=2
+        user_team = get_user_team(user_semester,user_id)
 
         today = datetime.now()
         print(f"user_team:{user_team}")
@@ -174,7 +222,7 @@ class ActionGetWeeklySchedule(Action):
         # Print the final query with parameters
         formatted_query = cur.mogrify(
             query, 
-            (user_id, today.weekday(),user_team)
+            (user_id, today.weekday()+1,user_team)
         ).decode("utf-8")
         print("Executing query:\n", formatted_query)
 
@@ -184,7 +232,6 @@ class ActionGetWeeklySchedule(Action):
         if schedule:
             response = "Παρακάτω είναι το πρόγραμμα της υπόλοιπης εβδομάδας:\n"
             dispatcher.utter_message(text=response)
-            days = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή"]
             total=0
             for class_name, classroom, day_of_week, start_time, end_time in schedule:
                 if (today.time()>start_time and day_of_week==today.weekday()) or today.weekday()>day_of_week-1:

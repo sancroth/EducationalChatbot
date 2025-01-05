@@ -30,9 +30,12 @@ intents:
   - provide_university_email
   - user_question_ability_to_help
   - user_express_disbelief_in_bot
-  - ask_next_class_of_course_name
-  - ask_classroom_of_course_name
-  - ask_teacher_of_course_name
+  - ask_next_course_schedule_by_course_name
+  - ask_course_classroom_by_course_name
+  - ask_course_teacher_by_course_name
+  - ask_next_course_schedule_generic
+  - ask_next_course_schedule_today
+  - ask_date_of_next_course
 actions:
   - validate_department
   - action_initialize_user
@@ -155,19 +158,19 @@ slots:
       - type: from_entity
         entity: course_name
 
-  last_course_name_provided:
+  last_course_name_provided_by_bot:
     type: text
     initial_value: None
     mappings:
       - type: custom 
 
-  last_teacher_name_provided:
+  last_teacher_name_provided_by_bot:
     type: text
     initial_value: None
     mappings:
       - type: custom 
 
-  last_classroom_provided:
+  last_classroom_provided_by_bot:
     type: text
     initial_value: None
     mappings:
@@ -367,3 +370,15 @@ responses:
 
   utter_bot_reassure_user:
     - text: "Σου υπόσχομαι πως θα κάνω ότι περνάει από το ψηφιακό μου χέρι για να σε βοηθήσω!"
+  
+  utter_fetch_next_user_course:
+    - text: "Το επόμενο σου μάθημα είναι φυσική!"
+  
+  utter_fetch_next_user_course_by_course_name:
+    - text: "Εχεις αυτο το μαθημα ξανα τωρα!"
+
+  utter_fetch_classroom_of_course_by_course_name:
+    - text: "Στο αμφιθέατρο"
+
+  utter_fetch_teacher_of_course_by_course_name:
+    - text: "Φατουρος!"

@@ -106,6 +106,34 @@ class ActionSetUserRequiresBotOptions(Action):
 
 class ActionGetWeeklySchedule(Action):
     def name(self) -> str:
+        return "action_get_date_of_next_course"
+
+    def run(self,  dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        user_id = tracker.get_slot("uid")
+        print(f"user {user_id} requested the date of next course")
+        
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+
+
+        user_team = 1
+        cur.execute(f"SELECT semester FROM student_info WHERE user_id = {user_id};")
+        user_semester=cur.fetchone()[0]
+        if user_semester == 1:
+            if user_id % 10 in (7, 8, 9):
+                user_team=2
+        else:
+            if user_id % 2 == 1:
+                user_team=2
+
+        today = datetime.now()
+        print(f"user_team:{user_team}")
+        print(f'date against {today.time()}')
+
+class ActionGetWeeklySchedule(Action):
+    def name(self) -> str:
         return "action_get_weekly_schedule"
 
     def run(self,  dispatcher: CollectingDispatcher,
@@ -130,7 +158,7 @@ class ActionGetWeeklySchedule(Action):
 
         today = datetime.now()
         print(f"user_team:{user_team}")
-        print(f'date against f{today.time()}')
+        print(f'date against {today.time()}')
         
         query = """
         SELECT c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time

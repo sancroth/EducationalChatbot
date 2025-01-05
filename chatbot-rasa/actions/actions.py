@@ -169,7 +169,7 @@ class ActionGetNextCourseDate(Action):
                     next_date = today + timedelta(days=days_ahead)
                     response = "Σου παραθέτω τις πληροφορίες για το επόμενο μάθημα που βρήκα στο πρόγραμμα σου!"
                     dispatcher.utter_message(text=response)
-                    dispatcher.utter_message(text=f"Ημερομηνία: {next_date.strftime("%d/%m/%Y")}")
+                    dispatcher.utter_message(text=f'Ημερομηνία: {next_date.strftime("%d/%m/%Y")}')
                     dispatcher.utter_message(text=f"{days[day_of_week-1]}: {class_name}")
                     dispatcher.utter_message(text=f"Αίθουσα: {classroom}, {start_time} με {end_time}")
                     course_day_found=True

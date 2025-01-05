@@ -10,7 +10,6 @@ intents:
   - chitchat
   - ask_bot_supplied_services
   - ask_help
-  - user_asks_next_scheduled_class
   - user_asks_schedule_rest_of_the_week
   - get_department_secretariat_info
   - get_department_secretariat_phone

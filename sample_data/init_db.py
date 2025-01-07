@@ -19,11 +19,13 @@ try:
     # Create database 'ice' if it doesn't exist
     cursor.execute("SELECT 1 FROM pg_database WHERE datname='ice';")
     exists = cursor.fetchone()
-    if not exists:
-        cursor.execute("CREATE DATABASE ice;")
-        print("Database 'ice' created successfully.")
-    else:
-        print("Database 'ice' already exists.")
+    if exists:
+        print("Database 'ice' already exists. dropping")
+        cursor.execute("DROP DATABASE ice;")
+        conn.commit()
+    cursor.execute("CREATE DATABASE ice;")
+    conn.commit()
+    
 
     # Connect to the new database
     conn.close()
@@ -211,7 +213,7 @@ try:
     with open('./students.csv', 'r') as f:
         next(f)
         reader = csv.reader(f)
-        
+        id=1
         for row in reader:
             cursor.execute("SET datestyle TO ISO, DMY;")
             cursor.execute(
@@ -222,19 +224,19 @@ try:
                 """,
                 (row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8])
             )
-        conn.commit()
-
-        for row in reader:
+            conn.commit()
             cursor.execute(f"SELECT key FROM departments WHERE id = {row[6]} LIMIT 1")
             department_key=cursor.fetchone()
             cursor.execute('''
                 INSERT INTO student_info (user_id, am, semester, special_needs)
                 VALUES (%s, %s, %s,%s)
                 ''',
-                (row[0],f'{department_key[0]}{row[0]}',row[9],None)
+                (id,f'{department_key[0]}{id}',row[9],None)
             )
-        conn.commit()
-    print("Data from 'students.csv' inserted successfully.")
+            conn.commit()
+            id+=1
+
+    print("Data from 'students.csv' inserted successfully.")        
     print("Student info generated")
 
     with open('./teachers.csv','r') as f:

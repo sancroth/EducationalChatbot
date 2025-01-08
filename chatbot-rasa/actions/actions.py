@@ -144,12 +144,14 @@ class ActionGetNextCourseDate(Action):
         WHERE se.user_id = %s 
         AND cs.day_of_week = %s
         AND cs.class_team = %s
+        GROUP BY c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
         ORDER BY cs.day_of_week, cs.start_time;
         """
 
         course_day_found = False
         check_against_current_time = True
-        if today.weekday>4:
+        next_day=today.weekday()+1
+        if today.weekday()>4:
             next_day=1
             check_against_current_time=False
         while(not course_day_found):
@@ -174,11 +176,11 @@ class ActionGetNextCourseDate(Action):
                     dispatcher.utter_message(text=f"Αίθουσα: {classroom}, {start_time} με {end_time}")
                     course_day_found=True
                     break
-            if not course_day_found:
-                next_day+=1
-                check_against_current_time=False
-                if next_day>5:
-                    next_day=1
+                if not course_day_found:
+                    next_day+=1
+                    check_against_current_time=False
+                    if next_day>5:
+                        next_day=1
             else:
                 response = "Δεν βρήκα κάποιο μάθημα στο πρόγραμμα σου! Αν πιστεύεις ότι αυτό είναι λάθος, παρακαλώ επικοινώνησε με τη γραμματεία του τμήματος."
                 dispatcher.utter_message(text=response)
@@ -216,6 +218,7 @@ class ActionGetWeeklySchedule(Action):
         WHERE se.user_id = %s 
         AND cs.day_of_week BETWEEN %s AND 6
         AND cs.class_team = %s
+        GROUP BY c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
         ORDER BY cs.day_of_week, cs.start_time;
         """
 

@@ -372,17 +372,26 @@ try:
                 else:
                     if row[0] % 2 == 1:
                         user_team=2
-
+            lookup_user_query = '''
+            SELECT user_id FROM users WHERE email = %s LIMIT 1;
+            '''
+            # Execute query
+            cursor.execute(lookup_user_query, (row[3],))
+            user_id = cursor.fetchone()
+            print("enrollemnt:")
+            print(row[9])
+            print(row[6])
             cursor.execute(f"SELECT class_id FROM classes WHERE semester={row[9]} and department_id={row[6]};")
             classes = cursor.fetchall()
             for uni_class in classes:
+                print(uni_class[0])
                 cursor.execute('''
                     INSERT INTO student_enrollments (department_id, user_id, class_id)
                     VALUES (%s, %s, %s)
                     ''',
-                    (row[6], row[0],uni_class[0])
+                    (row[6], user_id,uni_class[0])
                 )
-    conn.commit()
+            conn.commit()
     print("Student enrollments have been generated")
 
     if conn:

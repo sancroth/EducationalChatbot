@@ -129,32 +129,33 @@ stories:
 
 - story: interactive_story_1
   steps:
-  - intent: user_request_scheduled_meeting_with_teacher
-  - action: scheduled_meeting_with_teacher_form
-  - active_loop: scheduled_meeting_with_teacher_form
+  - intent: initialize
+  - action: action_initialize_user
   - slot_was_set:
-    - scheduled_meeting_min_date: 26/12/2024
+    - uid: 2
   - slot_was_set:
-    - scheduled_meeting_max_date: 24/01/2025
+    - role_id: unknown
   - slot_was_set:
-    - requested_slot: scheduled_meeting_teacher_email
-  - intent: user_cancel_request
-  - action: action_schedule_meeting_with_teacher_reset
+    - department_id: null
   - slot_was_set:
-    - scheduled_meeting_teacher_email: null
+    - department_key: ice
   - slot_was_set:
-    - scheduled_meeting_correct_teacher_email: null
-  - slot_was_set:
-    - scheduled_meeting_date: null
-  - slot_was_set:
-    - scheduled_meeting_correct_date: null
-  - slot_was_set:
-    - scheduled_meeting_min_date: null
-  - slot_was_set:
-    - scheduled_meeting_max_date: null
-  - action: utter_confirm_cancel
-  - action: action_deactivate_loop
-  - active_loop: null
-  - slot_was_set:
-    - requested_slot: null
+    - authenticated: 'True'
+  - intent: ask_next_course_schedule_generic
+  - action: action_get_date_of_next_course
   - action: utter_followup_offer_help
+  - intent: ask_next_schedule_of_course_by_course_name
+    entities:
+    - course_name: ΦΥΣΙΚΗ
+  - slot_was_set:
+    - course_name: ΦΥΣΙΚΗ
+  - action: action_get_date_of_next_course
+  - action: utter_followup_offer_help
+  - intent: ask_educational_question
+  - action: action_ask_educational_question
+  - intent: follow_up_more_detailed_information
+  - action: action_ask_educational_question
+  - slot_was_set:
+    - offered_to_persist_level_of_detail: true
+  - slot_was_set:
+    - latest_user_intent: follow_up_more_detailed_information

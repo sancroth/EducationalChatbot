@@ -16,6 +16,7 @@ from rasa_sdk.events import UserUtteranceReverted
 from rasa_sdk.types import DomainDict
 import psycopg2
 import os
+import json
 from datetime import datetime, timedelta
 from openai import OpenAI
 from rasa_sdk.events import EventType
@@ -73,7 +74,17 @@ class ActionInitializeUser(Action):
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
         custom_data = tracker.latest_message.get("metadata", {})
-
+        print(tracker.latest_message)
+        print("init user data")
+        print(custom_data)
+        if not custom_data:
+            raw_text = tracker.latest_message.get("text", "")
+            try:
+                # /initialize{"custom_data":{"uid":2,"department_key":"ice","authenticated":"True"}}
+                parsed_text = json.loads(raw_text.split('/initialize')[1])
+                custom_data = parsed_text.get("custom_data", {})
+            except (IndexError, json.JSONDecodeError):
+                custom_data = {}
         uid = custom_data.get("uid", "unknown")
         role_id = custom_data.get("role_id", "unknown")
         department_id = custom_data.get("department_id", None)
@@ -118,6 +129,40 @@ class ActionSetUserRequiresBotOptions(Action):
 
 class ActionGetNextCourseDate(Action):
     def name(self) -> str:
+        return "action_fetch_course_classroom_by_course_name"
+
+    def run(self,  dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        user_id = tracker.get_slot("uid")
+        print(f"user {user_id} requested the date of next course")
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute(f"SELECT semester FROM student_info WHERE user_id = {user_id};")
+        user_semester = cur.fetchone()[0]
+        user_team = get_user_team(user_semester,user_id)
+        course_name = next(tracker.get_latest_entity_values("course_name"), None)
+        if course_name == None:
+            return[
+                SlotSet("last_classroom_provided_by_bot",None),
+                SlotSet("course_classroom_found",False),
+                SlotSet("course_name",None)
+            ]
+        cur.execute(f"SELECT class_id FROM classes WHERE class_name = '{course_name}';")
+        course_id = cur.fetchone()[0]
+        if course_id:
+            cur.execute(f"SELECT classroom FROM class_schedules WHERE class_id = {course_id} AND class_team = {user_team} GROUP BY classroom;")
+            classroom = cur.fetchone()[0]
+            return[
+                SlotSet("last_classroom_provided_by_bot",classroom),
+                SlotSet("course_classroom_found",True)
+            ]
+        else:
+            return [SlotSet("course_classroom_found",False)]
+
+
+class ActionGetNextCourseDate(Action):
+    def name(self) -> str:
         return "action_get_date_of_next_course"
 
     def run(self,  dispatcher: CollectingDispatcher,
@@ -128,65 +173,112 @@ class ActionGetNextCourseDate(Action):
         
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
-
         cur.execute(f"SELECT semester FROM student_info WHERE user_id = {user_id};")
-        user_semester=cur.fetchone()[0]
+        user_semester = cur.fetchone()[0]
         user_team = get_user_team(user_semester,user_id)
         today = datetime.now()
+        course_name = next(tracker.get_latest_entity_values("course_name"), None)
+        last_intent = tracker.latest_message['intent'].get('name')
+
         print(f"user_team:{user_team}")
         print(f'date against {today.time()}')
+        print(f'user intent: {last_intent}')
+        print(f'course name: {course_name if course_name else "None"}')
         
-        query = """
-        SELECT c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
-        FROM student_enrollments se
-        JOIN class_schedules cs ON se.class_id = cs.class_id
-        JOIN classes c ON cs.class_id = c.class_id
-        WHERE se.user_id = %s 
-        AND cs.day_of_week = %s
-        AND cs.class_team = %s
-        GROUP BY c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
-        ORDER BY cs.day_of_week, cs.start_time;
-        """
+        if last_intent=='ask_next_schedule_of_course_by_course_name':
+            if course_name:
+                query = """
+                SELECT c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
+                FROM student_enrollments se
+                JOIN class_schedules cs ON se.class_id = cs.class_id
+                JOIN classes c ON cs.class_id = c.class_id
+                WHERE se.user_id = %s
+                AND cs.day_of_week = %s
+                AND cs.class_team = %s
+                AND c.class_name= %s
+                GROUP BY c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
+                ORDER BY cs.day_of_week, cs.start_time;
+                """
+        else:
+            query = """
+            SELECT c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
+            FROM student_enrollments se
+            JOIN class_schedules cs ON se.class_id = cs.class_id
+            JOIN classes c ON cs.class_id = c.class_id
+            WHERE se.user_id = %s 
+            AND cs.day_of_week = %s
+            AND cs.class_team = %s
+            GROUP BY c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
+            ORDER BY cs.day_of_week, cs.start_time;
+            """
 
         course_day_found = False
         check_against_current_time = True
-        next_day=today.weekday()+1
-        if today.weekday()>4:
-            next_day=1
-            check_against_current_time=False
-        while(not course_day_found):
-            formatted_query = cur.mogrify(
-                query, 
-                (user_id, next_day,user_team)
-            ).decode("utf-8")
-            print("Executing query:\n", formatted_query)
+        query_date=today.weekday()+1
+        total_days_checked=0
 
-            cur.execute(query, (user_id, next_day,user_team))
+        if today.weekday()>4:
+            query_date=1
+            check_against_current_time=False
+
+        while(not course_day_found):
+            if last_intent=='ask_next_schedule_of_course_by_course_name':
+                response = f"Σου παραθέτω τις πληροφορίες για το επόμενο μάθημα ({course_name}) που βρήκα στο πρόγραμμα σου!"
+                formatted_query = cur.mogrify(
+                    query, 
+                    (user_id, query_date,user_team,course_name)
+                ).decode("utf-8")
+                print("Executing query:\n", formatted_query)
+                cur.execute(query, (user_id, query_date,user_team,course_name))
+            else:
+                response = "Σου παραθέτω τις πληροφορίες για το επόμενο μάθημα που βρήκα στο πρόγραμμα σου!"
+                formatted_query = cur.mogrify(
+                    query, 
+                    (user_id, query_date,user_team)
+                ).decode("utf-8")
+                print("Executing query:\n", formatted_query)
+                cur.execute(query, (user_id, query_date,user_team))
+
             schedule = cur.fetchall()
-            if schedule:
+
+            print(query_date)
+
+            if schedule and total_days_checked<5:
                 for class_name, classroom, day_of_week, start_time, end_time in schedule:
                     if (today.time()>start_time and check_against_current_time):
                         continue
                     days_ahead = ((day_of_week-1) - today.weekday() + 7) % 7
-                    next_date = today + timedelta(days=days_ahead)
-                    response = "Σου παραθέτω τις πληροφορίες για το επόμενο μάθημα που βρήκα στο πρόγραμμα σου!"
+                    query_date = today + timedelta(days=days_ahead)
                     dispatcher.utter_message(text=response)
-                    dispatcher.utter_message(text=f'Ημερομηνία: {next_date.strftime("%d/%m/%Y")}')
+                    dispatcher.utter_message(text=f'Ημερομηνία: {query_date.strftime("%d/%m/%Y")}')
                     dispatcher.utter_message(text=f"{days[day_of_week-1]}: {class_name}")
                     dispatcher.utter_message(text=f"Αίθουσα: {classroom}, {start_time} με {end_time}")
                     course_day_found=True
-                    break
+                    cur.close()
+                    conn.close()
+                    return []
                 if not course_day_found:
-                    next_day+=1
+                    print(f"scheduled course not found on day {query_date}. incrementing")
+                    query_date+=1
+                    total_days_checked+=1
+                    print(query_date)
                     check_against_current_time=False
-                    if next_day>5:
-                        next_day=1
+                    if query_date>5:
+                        query_date=1
             else:
-                response = "Δεν βρήκα κάποιο μάθημα στο πρόγραμμα σου! Αν πιστεύεις ότι αυτό είναι λάθος, παρακαλώ επικοινώνησε με τη γραμματεία του τμήματος."
-                dispatcher.utter_message(text=response)
+                if course_name:
+                    print(f"scheduled course not found on day {query_date}. incrementing")
+                    query_date+=1
+                    total_days_checked+=1
+                    print(query_date)
+                    check_against_current_time=False
+                    if query_date>5:
+                        query_date=1
+                else:
+                    response = "Δεν βρήκα κάποιο μάθημα στο πρόγραμμα σου! Αν πιστεύεις ότι αυτό είναι λάθος, παρακαλώ επικοινώνησε με τη γραμματεία του τμήματος."
+                    dispatcher.utter_message(text=response)
         cur.close()
         conn.close()
-
         return []
 
 class ActionGetWeeklySchedule(Action):

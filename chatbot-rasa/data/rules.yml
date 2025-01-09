@@ -78,7 +78,7 @@ rules:
   - action: utter_confirm_cancel
   - action: utter_followup_offer_help
 
-- rule: Fetch first next class
+- rule: Fetch first next course
   steps:
   - intent: ask_next_course_schedule_generic
   - action: action_get_date_of_next_course
@@ -87,12 +87,35 @@ rules:
 - rule: Fetch next course by name
   steps:
   - intent: ask_next_schedule_of_course_by_course_name
-  - action: utter_fetch_next_user_course_by_course_name
+  - action: action_get_date_of_next_course
+  - action: utter_followup_offer_help
 
-- rule: Fetch classroom of course
+- rule: Fetch classroom of course and offer follow up help
   steps:
   - intent: ask_course_classroom_by_course_name
-  - action: utter_fetch_classroom_of_course_by_course_name
+  - action: action_fetch_course_classroom_by_course_name
+  - slot_was_set:
+    - course_classroom_found: True
+  - action: utter_fetch_classroom_of_course_by_course_name_success
+  - action: utter_followup_offer_help
+
+- rule: Fetch classroom of course, but user is not enrolled
+  steps:
+  - intent: ask_course_classroom_by_course_name
+  - action: action_fetch_course_classroom_by_course_name
+  - slot_was_set:
+    - course_classroom_found: False
+  - action: utter_fetch_classroom_of_course_by_course_name_fail
+
+- rule: Fetch classroom of course, but course is not extracted
+  steps:
+  - intent: ask_course_classroom_by_course_name
+  - action: action_fetch_course_classroom_by_course_name
+  - slot_was_set:
+    - course_classroom_found: False
+  - slot_was_set:
+    - course_name: None
+  - action: utter_fetch_classroom_of_course_by_course_name_none
 
 - rule: Fetch teacher of course
   steps:

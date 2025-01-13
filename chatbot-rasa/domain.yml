@@ -42,10 +42,13 @@ intents:
 - user_question_ability_to_help
 - user_request_scheduled_meeting_with_teacher
 actions:
+- utter_fetch_teacher_of_course_by_course_name
+- action_fetch_course_teacher_by_course_name
+- action_get_date_of_next_course
 - utter_followup_offer_help
+- utter_chitchat
 - action_initialize_user
 - action_ask_educational_question
-- action_get_date_of_next_course
 - action_get_weekly_schedule
 - action_get_department_secretariat_info
 - utter_bot_reassure_user
@@ -59,7 +62,6 @@ actions:
 - action_schedule_meeting_with_teacher
 - action_schedule_meeting_with_teacher_reset
 - validate_scheduled_meeting_with_teacher_form
-- utter_chitchat
 - action_fetch_course_classroom_by_course_name
 forms:
   scheduled_meeting_with_teacher_form:
@@ -160,6 +162,11 @@ slots:
     initial_value: None
     mappings:
     - type: custom
+  last_teacher_name_list_provided_by_bot:
+    type: list
+    initial_value: None
+    mappings:
+    - type: custom
   last_teacher_name_provided_by_bot:
     type: text
     initial_value: None
@@ -170,7 +177,22 @@ slots:
     initial_value: None
     mappings:
     - type: custom
+  next_course_found:
+    type: bool
+    initial_value: None
+    mappings:
+    - type: custom
   course_classroom_found:
+    type: bool
+    initial_value: None
+    mappings:
+    - type: custom
+  course_teacher_name_found:
+    type: bool
+    initial_value: None
+    mappings:
+    - type: custom
+  course_teacher_name_found_multiple:
     type: bool
     initial_value: None
     mappings:
@@ -291,6 +313,7 @@ responses:
       - Μπορώ να σου δώσω πληροφορίες σχετικά με τη σχολή και τη γραμματεία, π.χ ποιο είναι το τηλέφωνο της γραμματίας
       - Προσπαθώ να παρέχω βοήθεια σε εκπαιδευτικές ερωτήσεις κάθε είδους, π.χ τι είναι ένας pointer στη γλώσσα προγραμματισμού C
       - Μπορώ να σε βοηθήσω να κλείσεις ραντεβού με κάποιον καθηγητή σου!
+      - Μπορω να σου δώσω πληροφορίες σχετικά με το πρόγραμμα σου, πχ. πότε έχω το επόμενο μάθημα, ποιο είναι το υπόλοιπο πρόγραμμα της εβδομάδας σου!
       - Μπορώ να σου παρέχω ανάλυση της προόδου σου για τη φοιτητική σου σταδιοδρομία καθώς και εξατομικευμένες συμβουλές για τη βελτίωση της απόδοσης σου!
   utter_cool:
   - text: Τέλεια!
@@ -349,13 +372,20 @@ responses:
   utter_fetch_next_user_course_by_course_name:
   - text: Εχεις αυτο το μαθημα ξανα τωρα!
   utter_fetch_classroom_of_course_by_course_name_success:
-  - text: "Η παράδοση του μαθήματος ({course_name}) γίνεται στην αίθουσα {last_classroom_provided_by_bot}!"
+  - text: Η παράδοση του μαθήματος ({course_name}) γίνεται στην αίθουσα {last_classroom_provided_by_bot}!
   utter_fetch_classroom_of_course_by_course_name_fail:
-  - text: "Δεν κατάφερα να βρω την αίθουσα που παραδίδετε το μάθημα της επιλογής σου. Μήπως το όνομα του μαθήματος ({course_name}) δεν είναι σωστό;"
-  utter_fetch_classroom_of_course_by_course_name_none:
-  - text: "Δεν κατάφερα να βρω την αίθουσα που παραδίδετε το μάθημα της επιλογής σου. Θα σε συμβούλευα να ελέγξεις το όνομα του μαθήματος και να δοκιμάσεις ξανα!"
+  - condition:
+    - type: slot
+      name: course_name
+      value: null
+    text: Δεν κατάφερα να βρω την αίθουσα που παραδίδετε το μάθημα της επιλογής σου. Μήπως το όνομα του μαθήματος ({course_name}) δεν είναι σωστό;
+  - text: Δεν κατάφερα να βρω την αίθουσα που παραδίδετε το μάθημα της επιλογής σου. Θα σε συμβούλευα να ελέγξεις το όνομα του μαθήματος και να δοκιμάσεις ξανα!
+  utter_fetch_teachers_of_course_by_course_name:
+  - text: 'Το μάθημα ({course_name}) διδάσκεται από τους: {last_teacher_name_list_provided_by_bot}'
   utter_fetch_teacher_of_course_by_course_name:
-  - text: Φατουρος!
+  - text: 'Το μάθημα ({course_name}) διδάσκεται από: {last_teacher_name_provided_by_bot}'
+  utter_fetch_teachers_of_course_by_course_name_none:
+  - text: Δεν κατάφερα να βρω στοιχεία για το μάθημα της επιλογής σου. Θα σε συμβούλευα να ελέγξεις το όνομα του μαθήματος και να δοκιμάσεις ξανα!
 session_config:
   session_expiration_time: 60
   carry_over_slots_to_new_session: true

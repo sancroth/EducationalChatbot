@@ -107,20 +107,39 @@ rules:
     - course_classroom_found: False
   - action: utter_fetch_classroom_of_course_by_course_name_fail
 
-- rule: Fetch classroom of course, but course is not extracted
-  steps:
-  - intent: ask_course_classroom_by_course_name
-  - action: action_fetch_course_classroom_by_course_name
-  - slot_was_set:
-    - course_classroom_found: False
-  - slot_was_set:
-    - course_name: None
-  - action: utter_fetch_classroom_of_course_by_course_name_none
-
-- rule: Fetch teacher of course
+- rule: Fetch teacher of course, more than one teacher name is found
   steps:
   - intent: ask_course_teacher_by_course_name
+  - action: action_fetch_course_teacher_by_course_name
+  - slot_was_set:
+    - course_teacher_name_found: True
+  - slot_was_set:
+    - course_teacher_name_found_multiple: True
+  - action: utter_fetch_teachers_of_course_by_course_name
+  - action: utter_followup_offer_help
+
+- rule: Fetch teacher of course, one teacher name is found
+  steps:
+  - intent: ask_course_teacher_by_course_name
+  - action: action_fetch_course_teacher_by_course_name
+  - slot_was_set:
+    - course_teacher_name_found: True
+  - slot_was_set:
+    - course_teacher_name_found_multiple: False
   - action: utter_fetch_teacher_of_course_by_course_name
+  - action: utter_followup_offer_help
+
+- rule: Fetch teacher of course, but course is not extracted
+  steps:
+  - intent: ask_course_teacher_by_course_name
+  - action: action_fetch_course_teacher_by_course_name
+  - slot_was_set:
+    - course_teacher_name_found: False
+  - slot_was_set:
+    - course_teacher_name_found_multiple: False
+  - slot_was_set:
+    - course_name: null
+  - action: utter_fetch_teachers_of_course_by_course_name_none
 
 - rule: Apologetic bot response
   steps:

@@ -127,7 +127,64 @@ class ActionSetUserRequiresBotOptions(Action):
             dispatcher.utter_message(text="Συγγνώμη, δεν σε κατάλαβα.")
             return []
 
-class ActionGetNextCourseDate(Action):
+class ActionGetCourseTeacher(Action):
+    def name(self) -> str:
+        return "action_fetch_course_teacher_by_course_name"
+
+    def run(self,  dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        course_name = next(tracker.get_latest_entity_values("course_name"), None)
+        if course_name == None:
+            return[
+                SlotSet("last_teacher_name_list_provided_by_bot",None),
+                SlotSet("last_teacher_name_provided_by_bot",None),
+                SlotSet("course_teacher_name_found",False),
+                SlotSet("course_teacher_name_found_multiple",False),
+                SlotSet("course_name",None)
+            ]
+        cur.execute(f"SELECT class_id FROM classes where class_name='{course_name}';")
+        class_id = cur.fetchone()[0]
+        if class_id:
+            query = """
+            SELECT u.last_name FROM
+            class_schedules cs 
+            JOIN users u on cs.teacher_id=u.user_id 
+            WHERE cs.class_id=%s
+            GROUP BY u.last_name;
+            """
+            print(class_id)
+            formatted_query = cur.mogrify(
+                query, 
+                (class_id,)
+            ).decode("utf-8")
+            print("Executing query:\n", formatted_query)
+            cur.execute(query, (class_id,))
+            teacher_names = cur.fetchall()
+            if len(teacher_names)>1:
+                return[
+                    SlotSet("last_teacher_name_list_provided_by_bot",teacher_names),
+                    SlotSet("last_teacher_name_provided_by_bot",None),
+                    SlotSet("course_teacher_name_found",True),
+                    SlotSet("course_teacher_name_found_multiple",True)
+                ]
+            else:
+                return[
+                    SlotSet("last_teacher_name_list_provided_by_bot",None),
+                    SlotSet("last_teacher_name_provided_by_bot",teacher_names[0]),
+                    SlotSet("course_teacher_name_found",True),
+                    SlotSet("course_teacher_name_found_multiple",False)
+                ]
+        else:
+            return [
+                SlotSet("course_teacher_name_found",False),
+                SlotSet("course_teacher_name_found_multiple",False),
+                SlotSet("course_name",None)
+            ]
+
+class ActionGetCourseClassroom(Action):
     def name(self) -> str:
         return "action_fetch_course_classroom_by_course_name"
 
@@ -224,19 +281,19 @@ class ActionGetNextCourseDate(Action):
         while(not course_day_found):
             if last_intent=='ask_next_schedule_of_course_by_course_name':
                 response = f"Σου παραθέτω τις πληροφορίες για το επόμενο μάθημα ({course_name}) που βρήκα στο πρόγραμμα σου!"
-                formatted_query = cur.mogrify(
-                    query, 
-                    (user_id, query_date,user_team,course_name)
-                ).decode("utf-8")
-                print("Executing query:\n", formatted_query)
+                # formatted_query = cur.mogrify(
+                #     query, 
+                #     (user_id, query_date,user_team,course_name)
+                # ).decode("utf-8")
+                # print("Executing query:\n", formatted_query)
                 cur.execute(query, (user_id, query_date,user_team,course_name))
             else:
                 response = "Σου παραθέτω τις πληροφορίες για το επόμενο μάθημα που βρήκα στο πρόγραμμα σου!"
-                formatted_query = cur.mogrify(
-                    query, 
-                    (user_id, query_date,user_team)
-                ).decode("utf-8")
-                print("Executing query:\n", formatted_query)
+                # formatted_query = cur.mogrify(
+                #     query, 
+                #     (user_id, query_date,user_team)
+                # ).decode("utf-8")
+                # print("Executing query:\n", formatted_query)
                 cur.execute(query, (user_id, query_date,user_team))
 
             schedule = cur.fetchall()

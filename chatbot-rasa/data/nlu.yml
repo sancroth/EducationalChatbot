@@ -153,7 +153,6 @@ nlu:
     - ΤΙ ΩΡΑ ΕΙΝΑΙ ΤΟ [ΓΡΑΜΜΙΚΗ ΑΛΓΕΒΡΑ (ΑΠ)](course_name)
     - ΠΟΙΑ ΕΙΝΑΙ Η ΕΠΟΜΕΝΗ ΜΕΡΑ ΤΟΥ ΜΑΘΗΜΑΤΟΣ [ΣΥΝΤΗΡΗΣΗ ΚΑΙ ΔΙΑΤΗΡΗΣ ΥΛΙΚΟΥ](course_name)
     - ποτε εχω [φυσικη]{"entity": "course_name", "value": "\u03a6\u03a5\u03a3\u0399\u039a\u0397"}
-    - ποτε εχω [φυσικη]{"entity": "course_name", "value": "\u03a6\u03a5\u03a3\u0399\u039a\u0397"}
 - intent: ask_course_classroom_by_course_name
   examples: |
     - Σε ποια αίθουσα είναι το μάθημα [ΜΑΘΗΜΑΤΙΚΗ ΑΝΑΛΥΣΗ I (ΑΠ)](course_name);
@@ -247,6 +246,7 @@ nlu:
     - ΠΟΙΑ ΕΙΝΑΙ Η ΥΠΕΥΘΥΝΗ ΓΙΑ ΤΟ [ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ ΥΠΟΛΟΓΙΣΤΩΝ (ΑΠ)](course_name)
     - ΠΟΙΟΣ ΕΙΝΑΙ ΚΑΘΗΓΗΤΗΣ ΤΟΥ [ΓΡΑΜΜΙΚΗ ΑΛΓΕΒΡΑ](course_name)
     - ΘΕΛΩ ΝΑ ΜΑΘΩ ΤΟΝ ΚΑΘΗΓΗΤΗ ΤΟΥ [ΓΡΑΜΜΙΚΗ ΑΛΓΕΒΡΑ (ΑΠ)](course_name)
+    - ποιος διδασκει [φυσικη]{"entity": "course_name", "value": "\u03a6\u03a5\u03a3\u0399\u039a\u0397"}
 - intent: initialize
   examples: |
     - /initialize
@@ -1091,6 +1091,9 @@ nlu:
     - μπορείς?
     - Μπορεις?
     - δεν ξερω μπορεις;
+- intent: chitchat
+  examples: |
+    - τι κανεις
 - synonym: ΦΥΣΙΚΗ
   examples: |
     - φυσικη

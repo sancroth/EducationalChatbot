@@ -159,3 +159,29 @@ stories:
     - offered_to_persist_level_of_detail: true
   - slot_was_set:
     - latest_user_intent: follow_up_more_detailed_information
+
+- story: interactive_story_2
+  steps:
+  - intent: ask_course_teacher_by_course_name
+    entities:
+    - course_name: ΦΥΣΙΚΗ
+  - slot_was_set:
+    - course_name: ΦΥΣΙΚΗ
+  - action: action_fetch_course_teacher_by_course_name
+  - slot_was_set:
+    - last_teacher_name_list_provided_by_bot: null
+  - slot_was_set:
+    - last_teacher_name_provided_by_bot:
+      - ΓΙΑΝΝΑΚΟΠΟΥΛΟΣ
+  - slot_was_set:
+    - course_teacher_name_found: true
+  - slot_was_set:
+    - course_teacher_name_found_multiple: false
+  - action: utter_fetch_teacher_of_course_by_course_name
+  - action: utter_followup_offer_help
+  - intent: ask_next_course_schedule_generic
+  - action: action_get_date_of_next_course
+  - action: utter_followup_offer_help
+  - intent: chitchat/user_ask_mood
+  - action: utter_chitchat
+  - action: utter_followup_offer_help

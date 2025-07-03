@@ -63,6 +63,7 @@ actions:
 - action_schedule_meeting_with_teacher_reset
 - validate_scheduled_meeting_with_teacher_form
 - action_fetch_course_classroom_by_course_name
+- action_answer_from_pdf
 forms:
   scheduled_meeting_with_teacher_form:
     required_slots:

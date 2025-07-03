@@ -152,3 +152,9 @@ rules:
   - action: utter_bot_reassure_user
   - action: utter_list_bot_options
   - action: utter_followup_offer_help
+
+- rule: Answer educational question from PDFs
+  steps:
+    - intent: ask_educational_question_from_pdf
+    - action: action_answer_from_pdf
+    - action: utter_followup_offer_help

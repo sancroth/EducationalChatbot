@@ -17,6 +17,7 @@ from rasa_sdk.types import DomainDict
 import psycopg2
 import os
 import json
+import requests
 from datetime import datetime, timedelta
 from openai import OpenAI
 from rasa_sdk.events import EventType
@@ -30,6 +31,24 @@ DB_CONFIG = {
 }
 
 days = ["Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή"]
+
+api_key = os.getenv("OPENAI_API_KEY",None)
+client = OpenAI(api_key=api_key)
+
+RAG_SERVICE_URL = os.getenv("RAG_SERVICE_URL", "http://rag-service:8000")
+
+def fetch_rag_context(question: str) -> str:
+    try:
+        resp = requests.post(
+            f"{RAG_SERVICE_URL}/get_context",
+            json={"question": question},
+            timeout=15
+        )
+        resp.raise_for_status()
+        return resp.json().get("context", "")
+    except Exception as e:
+        print(f"Error calling RAG API: {e}")
+        return ""
 
 def get_user_team(user_semester: int,user_id: int) -> int:
     if user_semester == 1:
@@ -52,6 +71,53 @@ class ActionDefaultFallback(Action):
         dispatcher.utter_message(response="utter_default_fallback")
         # Revert the user's input to allow them to rephrase
         return [UserUtteranceReverted()]
+
+class ActionAnswerFromPDF(Action):
+    def name(self) -> str:
+        return "action_answer_from_pdf"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any]
+    ) -> List[Dict[Text, Any]]:
+        
+        user_q = tracker.latest_message.get("text", "")
+        
+        # Call the RAG service
+        context = fetch_rag_context(user_q)
+
+        # Construct the prompt as before
+        prompt = f"""Use only this information to answer. 
+                     Do not access your personal knowledge base or internet.
+                     You take the role of a college teacher that answers to their student.
+ 
+                     Context:
+                     {context}
+ 
+                     Question: {user_q}
+ 
+                     Answer:"""
+
+        try:
+            resp = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are a helpful college teacher teaching their student."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            answer = resp.choices[0].message.content.strip()
+            dispatcher.utter_message(text=answer)
+
+        except Exception as e:
+            print(f"Error during OpenAI call: {e}")
+            dispatcher.utter_message(
+                text="Λυπάμαι, δεν κατάφερα να δημιουργήσω απάντηση αυτή τη στιγμή. Δοκίμασε ξανά!"
+            )
+
+        return []
 
 class ActionOfferedFollowUpHelp(Action):
     def name(self) -> str:
@@ -115,7 +181,6 @@ class ActionSetUserRequiresBotOptions(Action):
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         # Detect user intent from the last message
         last_intent = tracker.latest_message['intent'].get('name')
-
         # Determine slot value based on the detected intent
         if last_intent == "user_affirm":
             return [SlotSet("requested_bot_options", True)]
@@ -396,7 +461,7 @@ class ActionGetWeeklySchedule(Action):
                 dispatcher.utter_message(text=response)
             cur.close()
             conn.close()
-                #response += f"{days[day_of_week-1]}: {class_name}\n\nΑίθουσα: {classroom}, {start_time} με {end_time}\n"
+            #response += f"{days[day_of_week-1]}: {class_name}\n\nΑίθουσα: {classroom}, {start_time} με {end_time}\n"
         else:
             response = "Νομίζω πως δεν έχεις κάποιο άλλο μάθημα για την υπόλοιπη εβδομάδα! Καλή ξεκούραση και καλή μελέτη!"
             dispatcher.utter_message(text=response)
@@ -471,22 +536,26 @@ class ActionAskEducationalQuestion(Action):
         
         INTENT_CONFIG = {
             "detailed": {
-                "max_tokens": 1000,
-                "temperature": 0.7,
-                "system_message": "You are an assistant providing detailed and technical explanations.\
-                                    Use up to 1000 tokens."
+                "max_tokens": 1500,
+                "temperature": 0.8,
+                "system_message": "You are an assistant providing detailed and technical explanations. Answer the question in depth and using technical terms if needed.\
+                                    Use up to 1500 tokens.\
+                                    If the request is not of programming or educational nature reply with:\
+                                    'Αν και θα ήθελα πολύ να απαντήσω στο ερώτημα σου, δεν θεωρώ ότι είναι εκπαιδευτικής φύσης!'"
             },
             "less_complicated": {
-                "max_tokens": 300,
-                "temperature": 0.5,
+                "max_tokens": 500,
+                "temperature": 0.4,
                 "system_message": "You are an assistant explaining topics in a simple and easy-to-understand manner.\
-                                    Use up to 300 tokens."
+                                    Use up to 300 tokens.\
+                                    If the request is not of programming or educational nature reply with:\
+                                    'Αν και θα ήθελα πολύ να απαντήσω στο ερώτημα σου, δεν θεωρώ ότι είναι εκπαιδευτικής φύσης!'"
             },
             "default" : {
-                "max_tokens": 500,
+                "max_tokens": 700,
                 "temperature": 0.5,
                 "system_message": "You are an assistant answering questions and providing helpful information.\
-                                    Use up to 500 tokens.\
+                                    Use up to 700 tokens.\
                                     If the request is not of programming or educational nature reply with:\
                                     'Αν και θα ήθελα πολύ να απαντήσω στο ερώτημα σου, δεν θεωρώ ότι είναι εκπαιδευτικής φύσης!'"
             }

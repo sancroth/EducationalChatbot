@@ -60,7 +60,7 @@ services:
     networks:
       - chatbot_network
   rasa-actions:
-    image: custom-rasa
+    image: chatbot-rasa
     pull_policy: if_not_present
     container_name: rasa-actions
 #    command: "start --actions actions --cors '*' --debug"
@@ -80,7 +80,7 @@ services:
     volumes:
       - ./chatbot-rasa/actions:/app/actions
   rasa-server:
-    image: custom-rasa
+    image: chatbot-rasa
     pull_policy: if_not_present
     container_name: rasa-server
     environment:
@@ -94,6 +94,19 @@ services:
       - chatbot_network
     volumes:
       - ./chatbot-rasa:/app
+  rag-service:
+    image: rag-server
+    # build:
+    #   context: ./rag-service
+    container_name: rag-service
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    ports:
+      - "8000:8000"
+    networks:
+      - chatbot_network
+    volumes:
+      - ./rag-server/pdfs:/app/pdfs
 networks:
   chatbot_network:
     driver: bridge

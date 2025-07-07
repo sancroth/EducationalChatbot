@@ -1,10 +1,17 @@
 import os
 import fitz
+import logging
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 STATIC_FOLDER = "pdfs"
 PDF_PATHS = [
@@ -52,10 +59,12 @@ class QuestionRequest(BaseModel):
 @app.post("/get_context")
 async def get_context(request: QuestionRequest):
     try:
+        logger.info(f"Received question: {request.question}")
         context = rag.get_context(request.question)
+        logger.info(f"Context returned: {context[:200]}...")
         return {"context": context}
     except Exception as e:
-        print(f"Error in RAG: {e}")
+        logger.error(f"Error generating context: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

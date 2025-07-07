@@ -1,6 +1,10 @@
 version: "3.1"
 
 rules:
+# =============================================================================
+# SYSTEM & INITIALIZATION RULES
+# =============================================================================
+
 - rule: Fallback Rule
   steps:
     - intent: nlu_fallback
@@ -18,6 +22,10 @@ rules:
   steps:
     - action: utter_authenticated
 
+# =============================================================================
+# BASIC INTERACTION RULES
+# =============================================================================
+
 - rule: Respond to chitchat
   steps:
   - intent: chitchat
@@ -30,65 +38,41 @@ rules:
   - action: utter_list_bot_options
   - action: utter_followup_offer_help
 
-- rule: User agrees to persist level of detail
-  condition:
-    - slot_was_set:
-      - offered_to_persist_level_of_detail: true
+- rule: Apologetic bot response
   steps:
-    - intent: affirm_persist_level_of_detail
-    - action: action_update_level_of_detail_user_preference
-    - action: utter_affirm_persist_level_of_detail
+  - intent: user_express_disbelief_in_bot
+  - action: utter_bot_apology
 
-- rule: User denies persisting level of detail
-  condition:
-    - slot_was_set:
-      - offered_to_persist_level_of_detail: true
+- rule: Question ability to help
   steps:
-    - intent: deny_persist_level_of_detail
-    - slot_was_set:
-        - offered_to_persist_level_of_detail: true
-    - action: utter_deny_persist_level_of_detail
-
-- rule: Activate schedule meeting with teacher form
-  steps:
-    - intent: user_request_scheduled_meeting_with_teacher
-    - action: scheduled_meeting_with_teacher_form
-    - active_loop: scheduled_meeting_with_teacher_form
-
-- rule: Submit schedule meeting with teacher form
-  condition:
-    - active_loop: scheduled_meeting_with_teacher_form
-  steps:
-  - action: scheduled_meeting_with_teacher_form
-  - active_loop: null
-  - slot_was_set:
-    - requested_slot: null
-  - action: action_schedule_meeting_with_teacher
-  - action: action_schedule_meeting_with_teacher_reset
-
-- rule: User cancels teacher meeting form request
-  condition:
-    - active_loop: scheduled_meeting_with_teacher_form
-  steps:
-  - intent: user_cancel_request
-  - active_loop: null
-  - slot_was_set:
-    - requested_slot: null
-  - action: action_schedule_meeting_with_teacher_reset
-  - action: utter_confirm_cancel
+  - intent: user_question_ability_to_help
+  - action: utter_bot_reassure_user
+  - action: utter_list_bot_options
   - action: utter_followup_offer_help
 
-- rule: Fetch first next course
-  steps:
-  - intent: ask_next_course_schedule_generic
-  - action: action_get_date_of_next_course
-  - action: utter_followup_offer_help
+# =============================================================================
+# COURSE SCHEDULE & INFORMATION RULES
+# =============================================================================
 
-- rule: Fetch next course by name
+- rule: Handle course schedule requests
   steps:
-  - intent: ask_next_schedule_of_course_by_course_name
-  - action: action_get_date_of_next_course
-  - action: utter_followup_offer_help
+    - or:
+      - intent: ask_next_course_schedule_generic
+      - intent: ask_next_schedule_of_course_by_course_name
+    - action: action_track_conversation_context
+    - action: action_get_date_of_next_course
+    - action: action_suggest_course_related_info
+
+- rule: Get next available course
+  steps:
+    - intent: ask_next_available_course
+    - action: action_track_conversation_context
+    - action: action_get_next_available_course
+    - action: action_suggest_course_related_info
+
+# =============================================================================
+# COURSE CLASSROOM INFORMATION RULES
+# =============================================================================
 
 - rule: Fetch classroom of course and offer follow up help
   steps:
@@ -106,6 +90,10 @@ rules:
   - slot_was_set:
     - course_classroom_found: False
   - action: utter_fetch_classroom_of_course_by_course_name_fail
+
+# =============================================================================
+# COURSE TEACHER INFORMATION RULES
+# =============================================================================
 
 - rule: Fetch teacher of course, more than one teacher name is found
   steps:
@@ -141,17 +129,16 @@ rules:
     - course_name: null
   - action: utter_fetch_teachers_of_course_by_course_name_none
 
-- rule: Apologetic bot response
+- rule: Get teacher of this course
   steps:
-  - intent: user_express_disbelief_in_bot
-  - action: utter_bot_apology
+    - intent: ask_teacher_of_this_course
+    - action: action_track_conversation_context
+    - action: action_get_teacher_of_this_course
+    - action: action_offer_contextual_help
 
-- rule: question_ability_to_help
-  steps:
-  - intent: user_question_ability_to_help
-  - action: utter_bot_reassure_user
-  - action: utter_list_bot_options
-  - action: utter_followup_offer_help
+# =============================================================================
+# EDUCATIONAL SUPPORT RULES
+# =============================================================================
 
 - rule: Answer educational question from PDFs
   steps:
@@ -159,14 +146,99 @@ rules:
     - action: action_answer_from_pdf
     - action: utter_followup_offer_help
 
-- rule: Get next available course
+- rule: User agrees to persist level of detail
+  condition:
+    - slot_was_set:
+      - offered_to_persist_level_of_detail: true
   steps:
-    - intent: ask_next_available_course
-    - action: action_get_next_available_course
-    - action: utter_followup_offer_help
+    - intent: affirm_persist_level_of_detail
+    - action: action_update_level_of_detail_user_preference
+    - action: utter_affirm_persist_level_of_detail
 
-- rule: Get teacher of this course
+- rule: User denies persisting level of detail
+  condition:
+    - slot_was_set:
+      - offered_to_persist_level_of_detail: true
+  steps:
+    - intent: deny_persist_level_of_detail
+    - slot_was_set:
+        - offered_to_persist_level_of_detail: true
+    - action: utter_deny_persist_level_of_detail
+
+# =============================================================================
+# DEPARTMENT INFORMATION RULES (CONSOLIDATED)
+# =============================================================================
+
+- rule: Handle all department information requests
+  steps:
+    - or:
+      - intent: get_department_secretariat_info
+      - intent: get_department_secretariat_phone  
+      - intent: get_department_secretariat_email
+      - intent: get_department_secretariat_availability
+      - intent: get_department_website_url
+    - action: action_get_department_secretariat_info
+    - action: action_offer_contextual_help
+
+# =============================================================================
+# MEETING SCHEDULING FORM RULES
+# =============================================================================
+
+- rule: Activate schedule meeting with teacher form
+  steps:
+    - intent: user_request_scheduled_meeting_with_teacher
+    - action: scheduled_meeting_with_teacher_form
+    - active_loop: scheduled_meeting_with_teacher_form
+
+- rule: Submit schedule meeting with teacher form
+  condition:
+    - active_loop: scheduled_meeting_with_teacher_form
+  steps:
+  - action: scheduled_meeting_with_teacher_form
+  - active_loop: null
+  - slot_was_set:
+    - requested_slot: null
+  - action: action_schedule_meeting_with_teacher
+  - action: action_schedule_meeting_with_teacher_reset
+
+- rule: User cancels teacher meeting form request
+  condition:
+    - active_loop: scheduled_meeting_with_teacher_form
+  steps:
+  - intent: user_cancel_request
+  - active_loop: null
+  - slot_was_set:
+    - requested_slot: null
+  - action: action_schedule_meeting_with_teacher_reset
+  - action: utter_confirm_cancel
+  - action: utter_followup_offer_help
+
+# =============================================================================
+# ENHANCED ERROR HANDLING & RECOVERY RULES
+# =============================================================================
+
+- rule: Handle course not found with suggestions
+  steps:
+    - intent: ask_course_classroom_by_course_name
+    - action: action_fetch_course_classroom_by_course_name
+    - slot_was_set:
+        - course_classroom_found: False
+    - action: utter_fetch_classroom_of_course_by_course_name_fail
+    - action: action_suggest_similar_courses
+
+- rule: Handle teacher not found with alternatives
+  steps:
+    - intent: ask_course_teacher_by_course_name
+    - action: action_fetch_course_teacher_by_course_name
+    - slot_was_set:
+        - course_teacher_name_found: False
+    - action: utter_fetch_teachers_of_course_by_course_name_none
+    - action: action_offer_course_alternatives
+
+- rule: Handle no context for teacher query
   steps:
     - intent: ask_teacher_of_this_course
     - action: action_get_teacher_of_this_course
-    - action: utter_followup_offer_help
+    - slot_was_set:
+        - last_course_name_provided_by_bot: null
+    - action: action_clarify_course_for_teacher_query

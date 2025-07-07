@@ -887,7 +887,10 @@ class ActionGetNextAvailableCourse(Action):
             dispatcher.utter_message(text=f"Σήμερα ({days[day_of_week-1]})")
             cur.close()
             conn.close()
-            return [SlotSet("last_course_name_provided_by_bot", class_name)]
+            return [
+                SlotSet("last_course_name_provided_by_bot", class_name),
+                SlotSet("conversation_context", "course_schedule")
+            ]
         
         # If no course today, find the next available course on subsequent days
         query_next_days = """
@@ -920,7 +923,10 @@ class ActionGetNextAvailableCourse(Action):
             dispatcher.utter_message(text=f"Ημερομηνία: {target_date.strftime('%d/%m/%Y')} ({days[day_of_week-1]})")
             cur.close()
             conn.close()
-            return [SlotSet("last_course_name_provided_by_bot", class_name)]
+            return [
+                SlotSet("last_course_name_provided_by_bot", class_name),
+                SlotSet("conversation_context", "course_schedule")
+            ]
         
         # If no course this week, check next week starting from Monday
         query_next_week = """
@@ -950,7 +956,10 @@ class ActionGetNextAvailableCourse(Action):
             dispatcher.utter_message(text=f"Ημερομηνία: {target_date.strftime('%d/%m/%Y')} ({days[day_of_week-1]})")
             cur.close()
             conn.close()
-            return [SlotSet("last_course_name_provided_by_bot", class_name)]
+            return [
+                SlotSet("last_course_name_provided_by_bot", class_name),
+                SlotSet("conversation_context", "course_schedule")
+            ]
         
         # If no courses found at all
         dispatcher.utter_message(text="Δεν βρήκα κάποιο διαθέσιμο μάθημα στο πρόγραμμά σου. Παρακαλώ επικοινώνησε με τη γραμματεία του τμήματος.")
@@ -1042,3 +1051,169 @@ class ActionGetTeacherOfThisCourse(Action):
             cur.close()
             conn.close()
             return []
+
+class ActionOfferContextualHelp(Action):
+    def name(self) -> str:
+        return "action_offer_contextual_help"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        last_course_name = tracker.get_slot("last_course_name_provided_by_bot")
+        conversation_context = tracker.get_slot("conversation_context")
+        last_successful_query_type = tracker.get_slot("last_successful_query_type")
+        
+        # Offer contextual help based on what was just discussed
+        if last_course_name and conversation_context == "course_schedule":
+            dispatcher.utter_message(
+                text=f"Θέλεις να μάθεις κι άλλα στοιχεία για το μάθημα '{last_course_name}'; "
+                     f"Μπορώ να σου πω ποιος είναι ο καθηγητής ή σε ποια αίθουσα γίνεται."
+            )
+        elif conversation_context == "course_teacher":
+            dispatcher.utter_message(
+                text="Θέλεις να μάθεις κάτι άλλο για αυτό το μάθημα; "
+                     "Μπορώ να σου δώσω πληροφορίες για το πρόγραμμα ή την αίθουσα."
+            )
+        elif conversation_context == "course_classroom":
+            dispatcher.utter_message(
+                text="Υπάρχει κάτι άλλο που θα ήθελες να μάθεις για αυτό το μάθημα; "
+                     "Μπορώ να σου πω πότε είναι το επόμενο ή ποιος είναι ο καθηγητής."
+            )
+        else:
+            # Default contextual help
+            dispatcher.utter_message(text="Υπάρχει κάτι άλλο που μπορώ να κάνω για εσένα;")
+        
+        return []
+
+class ActionSuggestCourseRelatedInfo(Action):
+    def name(self) -> str:
+        return "action_suggest_course_related_info"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        last_course_name = tracker.get_slot("last_course_name_provided_by_bot")
+        
+        if last_course_name:
+            dispatcher.utter_message(
+                text=f"Για το μάθημα '{last_course_name}' μπορώ επίσης να σου δώσω:",
+                buttons=[
+                    {"title": "Ποιος είναι ο καθηγητής;", "payload": "/ask_teacher_of_this_course"},
+                    {"title": "Σε ποια αίθουσα γίνεται;", "payload": f"/ask_course_classroom_by_course_name{{\"course_name\":\"{last_course_name}\"}}"},
+                    {"title": "Πότε είναι το επόμενο;", "payload": f"/ask_next_schedule_of_course_by_course_name{{\"course_name\":\"{last_course_name}\"}}"}
+                ]
+            )
+        else:
+            dispatcher.utter_message(text="Τι άλλο θα ήθελες να μάθεις;")
+        
+        return []
+
+class ActionTrackConversationContext(Action):
+    def name(self) -> str:
+        return "action_track_conversation_context"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        last_intent = tracker.latest_message['intent'].get('name')
+        
+        # Set conversation context based on the intent
+        context_mapping = {
+            "ask_next_course_schedule_generic": "course_schedule",
+            "ask_next_course_schedule_today": "course_schedule", 
+            "ask_next_available_course": "course_schedule",
+            "ask_next_schedule_of_course_by_course_name": "course_schedule",
+            "ask_course_teacher_by_course_name": "course_teacher",
+            "ask_teacher_of_this_course": "course_teacher",
+            "ask_course_classroom_by_course_name": "course_classroom",
+            "ask_educational_question": "educational_help",
+            "ask_educational_question_from_pdf": "educational_help"
+        }
+        
+        conversation_context = context_mapping.get(last_intent, "general")
+        
+        # Determine user engagement level based on conversation flow
+        events = tracker.events[-5:]  # Look at last 5 events
+        user_events = [e for e in events if e.get("event") == "user"]
+        
+        if len(user_events) >= 3:
+            engagement_level = "high"
+        elif len(user_events) >= 2:
+            engagement_level = "medium" 
+        else:
+            engagement_level = "low"
+        
+        return [
+            SlotSet("conversation_context", conversation_context),
+            SlotSet("last_successful_query_type", last_intent),
+            SlotSet("user_engagement_level", engagement_level)
+        ]
+
+class ActionSuggestSimilarCourses(Action):
+    def name(self) -> str:
+        return "action_suggest_similar_courses"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        course_name = next(tracker.get_latest_entity_values("course_name"), None)
+        
+        if course_name:
+            dispatcher.utter_message(
+                text=f"Δεν βρήκα το μάθημα '{course_name}'. Μήπως εννοούσες κάποιο από αυτά:",
+                buttons=[
+                    {"title": "Δείξε μου όλα τα μαθήματα", "payload": "/ask_bot_supplied_services"},
+                    {"title": "Βοήθεια", "payload": "/ask_help"},
+                    {"title": "Δοκίμασε ξανά", "payload": "/ask_course_classroom_by_course_name"}
+                ]
+            )
+        else:
+            dispatcher.utter_message(
+                text="Δεν κατάφερα να καταλάβω ποιο μάθημα θέλεις. Μπορείς να το ξαναπείς;",
+                buttons=[
+                    {"title": "Δείξε μου τις επιλογές", "payload": "/ask_bot_supplied_services"}
+                ]
+            )
+        
+        return []
+
+class ActionOfferCourseAlternatives(Action):
+    def name(self) -> str:
+        return "action_offer_course_alternatives"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        dispatcher.utter_message(
+            text="Μπορώ να σε βοηθήσω με άλλες πληροφορίες:",
+            buttons=[
+                {"title": "Επόμενο διαθέσιμο μάθημα", "payload": "/ask_next_available_course"},
+                {"title": "Πρόγραμμα εβδομάδας", "payload": "/user_asks_schedule_rest_of_the_week"},
+                {"title": "Γραμματεία τμήματος", "payload": "/get_department_secretariat_info"}
+            ]
+        )
+        
+        return []
+
+class ActionClarifyCourseForTeacherQuery(Action):
+    def name(self) -> str:
+        return "action_clarify_course_for_teacher_query"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        dispatcher.utter_message(
+            text="Για να σου πω ποιος είναι ο καθηγητής, χρειάζομαι να ξέρω για ποιο μάθημα ρωτάς:",
+            buttons=[
+                {"title": "Πες μου το επόμενο μάθημα", "payload": "/ask_next_available_course"},
+                {"title": "Ρώτησε για συγκεκριμένο μάθημα", "payload": "/ask_course_teacher_by_course_name"}
+            ]
+        )
+        
+        return []

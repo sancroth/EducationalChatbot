@@ -68,6 +68,12 @@ actions:
 - action_answer_from_pdf
 - action_get_next_available_course
 - action_get_teacher_of_this_course
+- action_offer_contextual_help
+- action_suggest_course_related_info
+- action_track_conversation_context
+- action_suggest_similar_courses
+- action_offer_course_alternatives
+- action_clarify_course_for_teacher_query
 forms:
   scheduled_meeting_with_teacher_form:
     required_slots:
@@ -263,6 +269,25 @@ slots:
       conditions:
       - active_loop: scheduled_meeting_with_teacher_form
         requested_slot: scheduled_meeting_max_date
+  conversation_context:
+    type: text
+    initial_value: null
+    influence_conversation: true
+    mappings:
+    - type: custom
+  last_successful_query_type:
+    type: text
+    initial_value: null
+    influence_conversation: true
+    mappings:
+    - type: custom
+  user_engagement_level:
+    type: categorical
+    values: [low, medium, high]
+    initial_value: medium
+    influence_conversation: true
+    mappings:
+    - type: custom
 responses:
   utter_default_fallback:
   - text: Συγγνώμη, δεν σε κατάλαβα. Προσπάθησε ξανά, επαναδιατυπώνοντας την ερώτησή σου.

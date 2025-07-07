@@ -242,3 +242,21 @@ rules:
     - slot_was_set:
         - last_course_name_provided_by_bot: null
     - action: action_clarify_course_for_teacher_query
+
+# =============================================================================
+# SMART CONVERSATIONAL RULES
+# =============================================================================
+
+- rule: Handle smart schedule queries
+  steps:
+    - or:
+      - intent: ask_today_schedule
+      - intent: ask_tomorrow_schedule
+      - intent: ask_vague_schedule
+    - action: action_smart_schedule_query
+    - action: action_track_conversation_context
+
+- rule: Provide break suggestions
+  steps:
+    - intent: ask_break_suggestions
+    - action: action_provide_break_suggestions

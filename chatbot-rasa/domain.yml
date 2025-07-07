@@ -11,6 +11,8 @@ intents:
 - ask_next_course_schedule_generic
 - ask_next_course_schedule_today
 - ask_next_schedule_of_course_by_course_name
+- ask_next_available_course
+- ask_teacher_of_this_course
 - chitchat:
     used_entities:
     - course_name
@@ -64,6 +66,8 @@ actions:
 - validate_scheduled_meeting_with_teacher_form
 - action_fetch_course_classroom_by_course_name
 - action_answer_from_pdf
+- action_get_next_available_course
+- action_get_teacher_of_this_course
 forms:
   scheduled_meeting_with_teacher_form:
     required_slots:

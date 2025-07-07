@@ -835,3 +835,210 @@ class ActionScheduleMeetingWithTeacherReset(Action):
             SlotSet("scheduled_meeting_min_date", None),
             SlotSet("scheduled_meeting_max_date", None)
         ]
+
+class ActionGetNextAvailableCourse(Action):
+    def name(self) -> str:
+        return "action_get_next_available_course"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        user_id = tracker.get_slot("uid")
+        print(f"user {user_id} requested the next available course")
+        
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute(f"SELECT semester FROM student_info WHERE user_id = {user_id};")
+        user_semester = cur.fetchone()[0]
+        user_team = get_user_team(user_semester, user_id)
+        
+        today = datetime.now()
+        current_time = today.time()
+        current_day = today.weekday() + 1  # Monday = 1, Sunday = 7
+        
+        print(f"user_team: {user_team}")
+        print(f"current_time: {current_time}")
+        print(f"current_day: {current_day}")
+        
+        # First, check for courses today that haven't started yet
+        query_today = """
+        SELECT c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
+        FROM student_enrollments se
+        JOIN class_schedules cs ON se.class_id = cs.class_id
+        JOIN classes c ON cs.class_id = c.class_id
+        WHERE se.user_id = %s 
+        AND cs.day_of_week = %s
+        AND cs.class_team = %s
+        AND cs.start_time > %s
+        GROUP BY c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
+        ORDER BY cs.start_time ASC
+        LIMIT 1;
+        """
+        
+        cur.execute(query_today, (user_id, current_day, user_team, current_time))
+        course_today = cur.fetchone()
+        
+        if course_today:
+            class_name, classroom, day_of_week, start_time, end_time = course_today
+            dispatcher.utter_message(text="Βρήκα το επόμενο διαθέσιμο μάθημά σου για σήμερα!")
+            dispatcher.utter_message(text=f"Μάθημα: {class_name}")
+            dispatcher.utter_message(text=f"Αίθουσα: {classroom}")
+            dispatcher.utter_message(text=f"Ώρα: {start_time} - {end_time}")
+            dispatcher.utter_message(text=f"Σήμερα ({days[day_of_week-1]})")
+            cur.close()
+            conn.close()
+            return [SlotSet("last_course_name_provided_by_bot", class_name)]
+        
+        # If no course today, find the next available course on subsequent days
+        query_next_days = """
+        SELECT c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
+        FROM student_enrollments se
+        JOIN class_schedules cs ON se.class_id = cs.class_id
+        JOIN classes c ON cs.class_id = c.class_id
+        WHERE se.user_id = %s 
+        AND cs.day_of_week > %s
+        AND cs.class_team = %s
+        GROUP BY c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
+        ORDER BY cs.day_of_week ASC, cs.start_time ASC
+        LIMIT 1;
+        """
+        
+        cur.execute(query_next_days, (user_id, current_day, user_team))
+        course_next_days = cur.fetchone()
+        
+        if course_next_days:
+            class_name, classroom, day_of_week, start_time, end_time = course_next_days
+            days_ahead = (day_of_week - 1) - today.weekday()
+            if days_ahead < 0:
+                days_ahead += 7  # Next week
+            target_date = today + timedelta(days=days_ahead)
+            
+            dispatcher.utter_message(text="Βρήκα το επόμενο διαθέσιμο μάθημά σου!")
+            dispatcher.utter_message(text=f"Μάθημα: {class_name}")
+            dispatcher.utter_message(text=f"Αίθουσα: {classroom}")
+            dispatcher.utter_message(text=f"Ώρα: {start_time} - {end_time}")
+            dispatcher.utter_message(text=f"Ημερομηνία: {target_date.strftime('%d/%m/%Y')} ({days[day_of_week-1]})")
+            cur.close()
+            conn.close()
+            return [SlotSet("last_course_name_provided_by_bot", class_name)]
+        
+        # If no course this week, check next week starting from Monday
+        query_next_week = """
+        SELECT c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
+        FROM student_enrollments se
+        JOIN class_schedules cs ON se.class_id = cs.class_id
+        JOIN classes c ON cs.class_id = c.class_id
+        WHERE se.user_id = %s 
+        AND cs.class_team = %s
+        GROUP BY c.class_name, cs.classroom, cs.day_of_week, cs.start_time, cs.end_time
+        ORDER BY cs.day_of_week ASC, cs.start_time ASC
+        LIMIT 1;
+        """
+        
+        cur.execute(query_next_week, (user_id, user_team))
+        course_next_week = cur.fetchone()
+        
+        if course_next_week:
+            class_name, classroom, day_of_week, start_time, end_time = course_next_week
+            days_ahead = (day_of_week - 1) - today.weekday() + 7  # Next week
+            target_date = today + timedelta(days=days_ahead)
+            
+            dispatcher.utter_message(text="Βρήκα το επόμενο διαθέσιμο μάθημά σου για την επόμενη εβδομάδα!")
+            dispatcher.utter_message(text=f"Μάθημα: {class_name}")
+            dispatcher.utter_message(text=f"Αίθουσα: {classroom}")
+            dispatcher.utter_message(text=f"Ώρα: {start_time} - {end_time}")
+            dispatcher.utter_message(text=f"Ημερομηνία: {target_date.strftime('%d/%m/%Y')} ({days[day_of_week-1]})")
+            cur.close()
+            conn.close()
+            return [SlotSet("last_course_name_provided_by_bot", class_name)]
+        
+        # If no courses found at all
+        dispatcher.utter_message(text="Δεν βρήκα κάποιο διαθέσιμο μάθημα στο πρόγραμμά σου. Παρακαλώ επικοινώνησε με τη γραμματεία του τμήματος.")
+        cur.close()
+        conn.close()
+        return []
+
+class ActionGetTeacherOfThisCourse(Action):
+    def name(self) -> str:
+        return "action_get_teacher_of_this_course"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        # Get the last course name that was provided by the bot
+        last_course_name = tracker.get_slot("last_course_name_provided_by_bot")
+        
+        if not last_course_name:
+            dispatcher.utter_message(text="Δεν έχω αναφέρει κάποιο συγκεκριμένο μάθημα πρόσφατα. Παρακαλώ ρώτησε για συγκεκριμένο μάθημα.")
+            return []
+        
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        
+        try:
+            # Get class_id from course name
+            cur.execute("SELECT class_id FROM classes WHERE class_name = %s;", (last_course_name,))
+            result = cur.fetchone()
+            
+            if not result:
+                dispatcher.utter_message(text=f"Δεν βρήκα στοιχεία για το μάθημα '{last_course_name}'.")
+                cur.close()
+                conn.close()
+                return []
+            
+            class_id = result[0]
+            
+            # Get teachers for this course
+            query = """
+            SELECT u.first_name, u.last_name FROM
+            class_schedules cs 
+            JOIN users u on cs.teacher_id = u.user_id 
+            WHERE cs.class_id = %s
+            GROUP BY u.first_name, u.last_name;
+            """
+            
+            cur.execute(query, (class_id,))
+            teachers = cur.fetchall()
+            
+            if not teachers:
+                dispatcher.utter_message(text=f"Δεν βρήκα καθηγητή για το μάθημα '{last_course_name}'.")
+                cur.close()
+                conn.close()
+                return []
+            
+            if len(teachers) == 1:
+                first_name, last_name = teachers[0]
+                teacher_name = f"{first_name} {last_name}" if first_name else last_name
+                dispatcher.utter_message(text=f"Το μάθημα '{last_course_name}' διδάσκεται από τον/την {teacher_name}.")
+                
+                # Update slots to track this information
+                return [
+                    SlotSet("last_teacher_name_provided_by_bot", teacher_name),
+                    SlotSet("last_teacher_name_list_provided_by_bot", None),
+                    SlotSet("course_teacher_name_found", True),
+                    SlotSet("course_teacher_name_found_multiple", False)
+                ]
+            else:
+                # Multiple teachers
+                teacher_names = []
+                for first_name, last_name in teachers:
+                    teacher_name = f"{first_name} {last_name}" if first_name else last_name
+                    teacher_names.append(teacher_name)
+                
+                dispatcher.utter_message(text=f"Το μάθημα '{last_course_name}' διδάσκεται από τους: {', '.join(teacher_names)}.")
+                
+                # Update slots to track this information
+                return [
+                    SlotSet("last_teacher_name_provided_by_bot", None),
+                    SlotSet("last_teacher_name_list_provided_by_bot", teacher_names),
+                    SlotSet("course_teacher_name_found", True),
+                    SlotSet("course_teacher_name_found_multiple", True)
+                ]
+                
+        except Exception as e:
+            print(f"Database error: {e}")
+            dispatcher.utter_message(text="Υπήρξε ένα σφάλμα κατά την αναζήτηση του καθηγητή.")
+            cur.close()
+            conn.close()
+            return []

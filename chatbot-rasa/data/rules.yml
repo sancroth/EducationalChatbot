@@ -158,3 +158,15 @@ rules:
     - intent: ask_educational_question_from_pdf
     - action: action_answer_from_pdf
     - action: utter_followup_offer_help
+
+- rule: Get next available course
+  steps:
+    - intent: ask_next_available_course
+    - action: action_get_next_available_course
+    - action: utter_followup_offer_help
+
+- rule: Get teacher of this course
+  steps:
+    - intent: ask_teacher_of_this_course
+    - action: action_get_teacher_of_this_course
+    - action: utter_followup_offer_help

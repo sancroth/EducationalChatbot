@@ -129,6 +129,8 @@ $form_login.find('input[type="submit"]').on('click', async function(event){
           // alert("Login successful!");
           console.log("Token:", result.access_token);
           localStorage.setItem("access_token", result.access_token);
+          // Clear session initialization flag to ensure /initialize runs after fresh login
+          sessionStorage.removeItem("webchat_initialized");
           window.location.href = "__NGINX_SERVER__/bot";
       } else {
           alert(result.error || "Login failed.");

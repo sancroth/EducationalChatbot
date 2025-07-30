@@ -2,21 +2,29 @@ version: '3.1'
 intents:
 - affirm_persist_level_of_detail
 - ask_bot_supplied_services
+- ask_break_suggestions
 - ask_course_classroom_by_course_name
+- ask_course_full_info
+- ask_course_info
 - ask_course_teacher_by_course_name
 - ask_date_of_next_course
 - ask_educational_question
+- ask_educational_question_from_pdf
+- ask_food_options
 - ask_help
+- ask_library_location
+- ask_monday_schedule
+- ask_next_available_course
 - ask_next_course_schedule_by_course_name
 - ask_next_course_schedule_generic
 - ask_next_course_schedule_today
 - ask_next_schedule_of_course_by_course_name
-- ask_next_available_course
 - ask_teacher_of_this_course
+- ask_today_remaining_schedule
 - ask_today_schedule
+- ask_tomorrow_full_schedule
 - ask_tomorrow_schedule
 - ask_vague_schedule
-- ask_break_suggestions
 - chitchat:
     used_entities:
     - course_name
@@ -48,21 +56,25 @@ intents:
 - user_question_ability_to_help
 - user_request_scheduled_meeting_with_teacher
 actions:
-- utter_fetch_teacher_of_course_by_course_name
 - action_fetch_course_teacher_by_course_name
+- utter_fetch_teachers_of_course_by_course_name_none
+- utter_greet_back
+- utter_cool
+- action_ask_educational_question
+- action_provide_break_suggestions
+- action_smart_schedule_query
+- action_initialize_user
+- utter_offer_help
+- utter_fetch_teacher_of_course_by_course_name
 - action_get_date_of_next_course
 - utter_followup_offer_help
 - utter_chitchat
-- action_initialize_user
-- action_ask_educational_question
 - action_get_weekly_schedule
 - action_get_department_secretariat_info
 - utter_bot_reassure_user
-- utter_offer_help
 - action_bot_offered_followup_help
 - utter_list_bot_options
 - action_set_user_requires_bot_options
-- utter_greet_back
 - validate_department
 - action_update_level_of_detail_user_preference
 - action_schedule_meeting_with_teacher
@@ -78,8 +90,6 @@ actions:
 - action_suggest_similar_courses
 - action_offer_course_alternatives
 - action_clarify_course_for_teacher_query
-- action_smart_schedule_query
-- action_provide_break_suggestions
 forms:
   scheduled_meeting_with_teacher_form:
     required_slots:
@@ -90,9 +100,9 @@ forms:
     - scheduled_meeting_date
     - scheduled_meeting_correct_date
 entities:
+- university_email
 - course_name
 - department
-- university_email
 - date
 slots:
   uid:
@@ -289,7 +299,10 @@ slots:
     - type: custom
   user_engagement_level:
     type: categorical
-    values: [low, medium, high]
+    values:
+    - low
+    - medium
+    - high
     initial_value: medium
     influence_conversation: true
     mappings:

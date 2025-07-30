@@ -61,31 +61,31 @@ stories:
   steps:
     - intent: get_department_secretariat_info
     - action: action_get_department_secretariat_info
-    - action: utter_followup_offer_help
+    - action: action_offer_contextual_help
 
 - story: Offer department secretariat information
   steps:
     - intent: get_department_secretariat_phone
     - action: action_get_department_secretariat_info
-    - action: utter_followup_offer_help
+    - action: action_offer_contextual_help
 
 - story: Offer department secretariat information
   steps:
     - intent: get_department_secretariat_availability
     - action: action_get_department_secretariat_info
-    - action: utter_followup_offer_help
+    - action: action_offer_contextual_help
 
 - story: Offer department secretariat information
   steps:
     - intent: get_department_secretariat_email
     - action: action_get_department_secretariat_info
-    - action: utter_followup_offer_help
+    - action: action_offer_contextual_help
 
 - story: Offer department secretariat information
   steps:
     - intent: get_department_website_url
     - action: action_get_department_secretariat_info
-    - action: utter_followup_offer_help
+    - action: action_offer_contextual_help
 
 - story: Handle educational question via OpenAI
   steps:
@@ -142,15 +142,15 @@ stories:
   - slot_was_set:
     - authenticated: 'True'
   - intent: ask_next_course_schedule_generic
-  - action: action_get_date_of_next_course
-  - action: utter_followup_offer_help
+  - action: action_smart_schedule_query
   - intent: ask_next_schedule_of_course_by_course_name
     entities:
     - course_name: ΦΥΣΙΚΗ
   - slot_was_set:
     - course_name: ΦΥΣΙΚΗ
+  - action: action_track_conversation_context
   - action: action_get_date_of_next_course
-  - action: utter_followup_offer_help
+  - action: action_suggest_course_related_info
   - intent: ask_educational_question
   - action: action_ask_educational_question
   - intent: follow_up_more_detailed_information
@@ -180,8 +180,357 @@ stories:
   - action: utter_fetch_teacher_of_course_by_course_name
   - action: utter_followup_offer_help
   - intent: ask_next_course_schedule_generic
-  - action: action_get_date_of_next_course
-  - action: utter_followup_offer_help
+  - action: action_smart_schedule_query
   - intent: chitchat/user_ask_mood
   - action: utter_chitchat
   - action: utter_followup_offer_help
+
+- story: Smart morning schedule check
+  steps:
+  - intent: initialize
+  - action: action_initialize_user
+  - slot_was_set:
+    - uid: 3
+    - authenticated: 'True'
+  - intent: ask_today_schedule
+  - action: action_smart_schedule_query
+  - action: action_track_conversation_context
+  - intent: ask_break_suggestions
+  - action: action_provide_break_suggestions
+  - intent: user_affirm
+  - action: utter_cool
+
+- story: Vague schedule query with clarification
+  steps:
+  - intent: ask_vague_schedule
+  - action: action_smart_schedule_query
+  - action: action_track_conversation_context
+  - intent: user_affirm
+  - action: utter_cool
+  - intent: ask_next_available_course
+  - action: action_smart_schedule_query
+
+- story: Tomorrow schedule with teacher follow-up
+  steps:
+  - intent: ask_tomorrow_schedule
+  - action: action_smart_schedule_query
+  - action: action_track_conversation_context
+  - intent: ask_teacher_of_this_course
+  - action: action_get_teacher_of_this_course
+  - action: action_offer_contextual_help
+
+- story: Course inquiry leading to meeting request
+  steps:
+  - intent: ask_course_teacher_by_course_name
+    entities:
+    - course_name: ΜΑΘΗΜΑΤΙΚΑ
+  - slot_was_set:
+    - course_name: ΜΑΘΗΜΑΤΙΚΑ
+  - action: action_fetch_course_teacher_by_course_name
+  - slot_was_set:
+    - course_teacher_name_found: true
+    - course_teacher_name_found_multiple: false
+  - action: utter_fetch_teacher_of_course_by_course_name
+  - action: utter_followup_offer_help
+  - intent: user_request_scheduled_meeting_with_teacher
+  - action: scheduled_meeting_with_teacher_form
+  - active_loop: scheduled_meeting_with_teacher_form
+
+- story: Course not found with smart recovery
+  steps:
+  - intent: ask_course_classroom_by_course_name
+    entities:
+    - course_name: ΦΙΛΟΣΟΦΙΑ
+  - slot_was_set:
+    - course_name: ΦΙΛΟΣΟΦΙΑ
+  - action: action_fetch_course_classroom_by_course_name
+  - slot_was_set:
+    - course_classroom_found: false
+  - action: utter_fetch_classroom_of_course_by_course_name_fail
+  - action: action_suggest_similar_courses
+  - intent: user_affirm
+  - action: utter_cool
+
+- story: PDF question with follow-up detail request
+  steps:
+  - intent: ask_educational_question_from_pdf
+  - action: action_answer_from_pdf
+  - action: utter_followup_offer_help
+  - intent: follow_up_more_detailed_information
+  - action: action_ask_educational_question
+  - slot_was_set:
+    - offered_to_persist_level_of_detail: true
+  - intent: affirm_persist_level_of_detail
+  - action: action_update_level_of_detail_user_preference
+  - action: utter_affirm_persist_level_of_detail
+
+- story: Educational question cascade
+  steps:
+  - intent: ask_educational_question
+  - action: action_ask_educational_question
+  - intent: follow_up_tell_me_more
+  - action: action_ask_educational_question
+  - intent: follow_up_less_complicated
+  - action: action_ask_educational_question
+  - intent: user_affirm
+  - action: utter_cool
+
+- story: Code explanation request
+  steps:
+  - intent: explain_code
+  - action: action_ask_educational_question
+  - intent: ask_educational_question
+  - action: action_ask_educational_question
+  - intent: user_deny
+  - action: utter_cool
+  - action: utter_followup_offer_help
+
+- story: Department info leading to website visit
+  steps:
+  - intent: get_department_secretariat_info
+  - action: action_get_department_secretariat_info
+  - action: action_offer_contextual_help
+  - intent: get_department_website_url
+  - action: action_get_department_secretariat_info
+  - action: action_offer_contextual_help
+  - intent: user_affirm
+  - action: utter_cool
+
+- story: Phone inquiry with availability check
+  steps:
+  - intent: get_department_secretariat_phone
+  - action: action_get_department_secretariat_info
+  - action: action_offer_contextual_help
+  - intent: get_department_secretariat_availability
+  - action: action_get_department_secretariat_info
+  - action: action_offer_contextual_help
+
+- story: Full day planning conversation
+  steps:
+  - intent: greet
+  - action: utter_greet_back
+  - action: utter_offer_help
+  - intent: ask_today_schedule
+  - action: action_smart_schedule_query
+  - action: action_track_conversation_context
+  - intent: ask_break_suggestions
+  - action: action_provide_break_suggestions
+  - intent: ask_teacher_of_this_course
+  - action: action_get_teacher_of_this_course
+  - action: action_offer_contextual_help
+  - intent: ask_tomorrow_schedule
+  - action: action_smart_schedule_query
+  - action: action_track_conversation_context
+
+- story: Academic support session
+  steps:
+  - intent: ask_educational_question_from_pdf
+  - action: action_answer_from_pdf
+  - action: utter_followup_offer_help
+  - intent: ask_educational_question
+  - action: action_ask_educational_question
+  - intent: ask_course_teacher_by_course_name
+    entities:
+    - course_name: ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ
+  - slot_was_set:
+    - course_name: ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ
+  - action: action_fetch_course_teacher_by_course_name
+  - slot_was_set:
+    - course_teacher_name_found: true
+    - course_teacher_name_found_multiple: false
+  - action: utter_fetch_teacher_of_course_by_course_name
+  - action: utter_followup_offer_help
+
+- story: Schedule conflict and resolution
+  steps:
+  - intent: ask_next_available_course
+  - action: action_smart_schedule_query
+  - intent: ask_course_classroom_by_course_name
+    entities:
+    - course_name: ΦΥΣΙΚΗ
+  - slot_was_set:
+    - course_name: ΦΥΣΙΚΗ
+  - action: action_fetch_course_classroom_by_course_name
+  - slot_was_set:
+    - course_classroom_found: true
+  - action: utter_fetch_classroom_of_course_by_course_name_success
+  - action: utter_followup_offer_help
+  - intent: ask_break_suggestions
+  - action: action_provide_break_suggestions
+
+- story: Bot capability doubt and reassurance
+  steps:
+  - intent: user_express_disbelief_in_bot
+  - action: utter_bot_apology
+  - intent: user_question_ability_to_help
+  - action: utter_bot_reassure_user
+  - action: utter_list_bot_options
+  - action: utter_followup_offer_help
+  - intent: ask_bot_supplied_services
+  - action: utter_list_bot_options
+  - action: utter_followup_offer_help
+
+- story: Misunderstood query recovery
+  steps:
+  - intent: nlu_fallback
+  - action: utter_default_fallback
+  - intent: ask_bot_supplied_services
+  - action: utter_list_bot_options
+  - action: utter_followup_offer_help
+  - intent: ask_today_schedule
+  - action: action_smart_schedule_query
+  - action: action_track_conversation_context
+
+
+- story: Successful meeting scheduling
+  steps:
+  - intent: user_request_scheduled_meeting_with_teacher
+  - action: scheduled_meeting_with_teacher_form
+  - active_loop: scheduled_meeting_with_teacher_form
+  - action: scheduled_meeting_with_teacher_form
+  - active_loop: null
+  - slot_was_set:
+    - requested_slot: null
+  - action: action_schedule_meeting_with_teacher
+  - action: action_schedule_meeting_with_teacher_reset
+
+- story: Meeting scheduling cancellation
+  steps:
+  - intent: user_request_scheduled_meeting_with_teacher
+  - action: scheduled_meeting_with_teacher_form
+  - active_loop: scheduled_meeting_with_teacher_form
+  - intent: user_cancel_request
+  - active_loop: null
+  - slot_was_set:
+    - requested_slot: null
+  - action: action_schedule_meeting_with_teacher_reset
+  - action: utter_confirm_cancel
+  - action: utter_followup_offer_help
+
+- story: Good mood conversation
+  steps:
+  - intent: mood_response
+    entities:
+    - mood: "καλά"
+  - action: utter_mood_good
+  - intent: ask_today_schedule
+  - action: action_smart_schedule_query
+  - action: action_track_conversation_context
+
+- story: Bad mood with encouragement
+  steps:
+  - intent: mood_response
+    entities:
+    - mood: "χάλια"
+  - action: utter_mood_bad
+  - intent: ask_break_suggestions
+  - action: action_provide_break_suggestions
+  - intent: ask_educational_question
+  - action: action_ask_educational_question
+
+- story: Chitchat leading to productive conversation
+  steps:
+  - intent: chitchat
+  - action: utter_chitchat
+  - action: utter_followup_offer_help
+  - intent: user_affirm
+  - action: action_set_user_requires_bot_options
+  - slot_was_set:
+    - requested_bot_options: true
+  - action: utter_list_bot_options
+  - action: utter_followup_offer_help
+  - intent: ask_next_available_course
+  - action: action_smart_schedule_query
+
+
+- story: Complete daily student interaction
+  steps:
+  - intent: greet
+  - action: utter_greet_back
+  - action: utter_offer_help
+  - intent: chitchat
+  - action: utter_chitchat
+  - action: utter_followup_offer_help
+  - intent: ask_next_available_course
+  - action: action_smart_schedule_query
+  - intent: ask_teacher_of_this_course
+  - action: action_get_teacher_of_this_course
+  - action: action_offer_contextual_help
+  - intent: ask_course_classroom_by_course_name
+    entities:
+    - course_name: ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ
+  - slot_was_set:
+    - course_name: ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ
+  - action: action_fetch_course_classroom_by_course_name
+  - slot_was_set:
+    - course_classroom_found: true
+  - action: utter_fetch_classroom_of_course_by_course_name_success
+  - action: utter_followup_offer_help
+  - intent: explain_code
+  - action: action_ask_educational_question
+  - intent: get_department_secretariat_phone
+  - action: action_get_department_secretariat_info
+  - action: action_offer_contextual_help
+  - intent: ask_break_suggestions
+  - action: action_provide_break_suggestions
+  - intent: ask_next_schedule_of_course_by_course_name
+    entities:
+    - course_name: ΜΑΘΗΜΑΤΙΚΑ
+  - slot_was_set:
+    - course_name: ΜΑΘΗΜΑΤΙΚΑ
+  - action: action_track_conversation_context
+  - action: action_get_date_of_next_course
+  - action: action_suggest_course_related_info
+
+- story: interactive_story_2
+  steps:
+  - intent: initialize
+  - action: action_initialize_user
+  - slot_was_set:
+    - uid: 50
+  - slot_was_set:
+    - role_id: unknown
+  - slot_was_set:
+    - department_id: null
+  - slot_was_set:
+    - department_key: ice
+  - slot_was_set:
+    - authenticated: 'True'
+  - intent: greet
+  - action: utter_greet_back
+  - action: utter_offer_help
+  - intent: action_listen
+  - intent: ask_next_course_schedule_generic
+  - action: action_smart_schedule_query
+  - slot_was_set:
+    - conversation_context: schedule_clarification
+  - intent: ask_next_available_course
+  - action: action_smart_schedule_query
+  - slot_was_set:
+    - last_course_name_provided_by_bot: ΑΛΓΟΡΙΘΜΟΙ ΚΑΙ ΠΟΛΥΠΛΟΚΟΤΗΤΑ (ΑΠ)
+  - slot_was_set:
+    - conversation_context: course_schedule
+  - intent: ask_course_teacher_by_course_name
+  - action: action_fetch_course_teacher_by_course_name
+  - slot_was_set:
+    - last_teacher_name_list_provided_by_bot: null
+  - slot_was_set:
+    - last_teacher_name_provided_by_bot: null
+  - slot_was_set:
+    - course_teacher_name_found: false
+  - slot_was_set:
+    - course_teacher_name_found_multiple: false
+  - slot_was_set:
+    - course_name: null
+  - action: utter_fetch_teachers_of_course_by_course_name_none
+  - intent: ask_educational_question
+  - action: action_ask_educational_question
+  - intent: follow_up_tell_me_more
+  - action: action_ask_educational_question
+  - intent: action_listen
+  - intent: ask_break_suggestions
+  - action: action_provide_break_suggestions
+  - slot_was_set:
+    - conversation_context: break_suggestions
+  - intent: user_deny
+  - action: utter_cool

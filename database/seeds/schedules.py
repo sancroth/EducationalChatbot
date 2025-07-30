@@ -1,6 +1,6 @@
 import csv
 import os
-from datetime import time
+from datetime import time, datetime
 from sqlalchemy.orm import Session
 from models.course import Class, ClassSchedule, StudentEnrollment
 from models.user import User
@@ -42,9 +42,9 @@ def seed_schedules(session: Session):
                     print(f"Class '{row['class_name']}' not found, skipping schedule")
                     continue
                 
-                # Parse times
-                start_time = time.fromisoformat(row['start_time'])
-                end_time = time.fromisoformat(row['end_time'])
+                # Parse times using strptime for HH:MM format
+                start_time = datetime.strptime(row['start_time'], '%H:%M').time()
+                end_time = datetime.strptime(row['end_time'], '%H:%M').time()
                 
                 schedule = ClassSchedule(
                     semester=course.semester,

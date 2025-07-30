@@ -7,5 +7,8 @@ chatbot-rasa/.rasa/
 chatbot-rasa/.rasa_env
 auth/.env
 .env
-pg_data/
+pg_data_old
 __pycache__
+.claude
+pg_data
+.bash_history

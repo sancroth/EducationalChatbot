@@ -233,14 +233,16 @@ class ActionGetCourseTeacher(Action):
                     SlotSet("last_teacher_name_list_provided_by_bot",teacher_names),
                     SlotSet("last_teacher_name_provided_by_bot",None),
                     SlotSet("course_teacher_name_found",True),
-                    SlotSet("course_teacher_name_found_multiple",True)
+                    SlotSet("course_teacher_name_found_multiple",True),
+                    SlotSet("last_course_name_provided_by_bot", course_name)
                 ]
             else:
                 return[
                     SlotSet("last_teacher_name_list_provided_by_bot",None),
                     SlotSet("last_teacher_name_provided_by_bot",teacher_names[0]),
                     SlotSet("course_teacher_name_found",True),
-                    SlotSet("course_teacher_name_found_multiple",False)
+                    SlotSet("course_teacher_name_found_multiple",False),
+                    SlotSet("last_course_name_provided_by_bot", course_name)
                 ]
         else:
             return [
@@ -264,6 +266,11 @@ class ActionGetCourseClassroom(Action):
         user_semester = cur.fetchone()[0]
         user_team = get_user_team(user_semester,user_id)
         course_name = next(tracker.get_latest_entity_values("course_name"), None)
+        
+        # If no course name entity found, check if we have a previous course in context
+        if course_name == None:
+            course_name = tracker.get_slot("last_course_name_provided_by_bot")
+            
         if course_name == None:
             return[
                 SlotSet("last_classroom_provided_by_bot",None),
@@ -1120,9 +1127,7 @@ class ActionTrackConversationContext(Action):
         
         last_intent = tracker.latest_message['intent'].get('name')
         
-        # Set conversation context based on the intent
         context_mapping = {
-            "ask_next_course_schedule_generic": "course_schedule",
             "ask_next_course_schedule_today": "course_schedule", 
             "ask_next_available_course": "course_schedule",
             "ask_next_schedule_of_course_by_course_name": "course_schedule",
@@ -1135,8 +1140,7 @@ class ActionTrackConversationContext(Action):
         
         conversation_context = context_mapping.get(last_intent, "general")
         
-        # Determine user engagement level based on conversation flow
-        events = tracker.events[-5:]  # Look at last 5 events
+        events = tracker.events[-5:]
         user_events = [e for e in events if e.get("event") == "user"]
         
         if len(user_events) >= 3:

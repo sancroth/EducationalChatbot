@@ -26,6 +26,12 @@ rules:
 # BASIC INTERACTION RULES
 # =============================================================================
 
+- rule: Respond to greeting
+  steps:
+  - intent: greet
+  - action: utter_greet_back
+  - action: utter_offer_help
+
 - rule: Respond to chitchat
   steps:
   - intent: chitchat
@@ -54,20 +60,11 @@ rules:
 # COURSE SCHEDULE & INFORMATION RULES
 # =============================================================================
 
-- rule: Handle course schedule requests
+- rule: Handle specific course schedule requests
   steps:
-    - or:
-      - intent: ask_next_course_schedule_generic
-      - intent: ask_next_schedule_of_course_by_course_name
+    - intent: ask_next_schedule_of_course_by_course_name
     - action: action_track_conversation_context
     - action: action_get_date_of_next_course
-    - action: action_suggest_course_related_info
-
-- rule: Get next available course
-  steps:
-    - intent: ask_next_available_course
-    - action: action_track_conversation_context
-    - action: action_get_next_available_course
     - action: action_suggest_course_related_info
 
 # =============================================================================
@@ -90,6 +87,7 @@ rules:
   - slot_was_set:
     - course_classroom_found: False
   - action: utter_fetch_classroom_of_course_by_course_name_fail
+  - action: action_suggest_similar_courses
 
 # =============================================================================
 # COURSE TEACHER INFORMATION RULES
@@ -132,7 +130,6 @@ rules:
 - rule: Get teacher of this course
   steps:
     - intent: ask_teacher_of_this_course
-    - action: action_track_conversation_context
     - action: action_get_teacher_of_this_course
     - action: action_offer_contextual_help
 
@@ -217,46 +214,114 @@ rules:
 # ENHANCED ERROR HANDLING & RECOVERY RULES
 # =============================================================================
 
-- rule: Handle course not found with suggestions
-  steps:
-    - intent: ask_course_classroom_by_course_name
-    - action: action_fetch_course_classroom_by_course_name
-    - slot_was_set:
-        - course_classroom_found: False
-    - action: utter_fetch_classroom_of_course_by_course_name_fail
-    - action: action_suggest_similar_courses
-
 - rule: Handle teacher not found with alternatives
   steps:
     - intent: ask_course_teacher_by_course_name
     - action: action_fetch_course_teacher_by_course_name
     - slot_was_set:
         - course_teacher_name_found: False
+    - slot_was_set:
+      - course_teacher_name_found_multiple: null
     - action: utter_fetch_teachers_of_course_by_course_name_none
     - action: action_offer_course_alternatives
 
 - rule: Handle no context for teacher query
-  steps:
-    - intent: ask_teacher_of_this_course
-    - action: action_get_teacher_of_this_course
+  condition:
     - slot_was_set:
         - last_course_name_provided_by_bot: null
+  steps:
+    - intent: ask_teacher_of_this_course
     - action: action_clarify_course_for_teacher_query
 
 # =============================================================================
 # SMART CONVERSATIONAL RULES
 # =============================================================================
 
-- rule: Handle smart schedule queries
+- rule: Handle vague schedule queries (triggers button selection)
   steps:
-    - or:
-      - intent: ask_today_schedule
-      - intent: ask_tomorrow_schedule
-      - intent: ask_vague_schedule
+    - intent: ask_vague_schedule
     - action: action_smart_schedule_query
     - action: action_track_conversation_context
+
+- rule: Handle today remaining schedule requests
+  steps:
+    - intent: ask_today_remaining_schedule
+    - action: action_smart_schedule_query
+    - action: action_track_conversation_context
+
+- rule: Handle tomorrow schedule requests  
+  steps:
+    - intent: ask_tomorrow_schedule
+    - action: action_smart_schedule_query
+    - action: action_track_conversation_context
+
+- rule: Handle tomorrow full schedule requests
+  steps:
+    - intent: ask_tomorrow_full_schedule
+    - action: action_smart_schedule_query
+    - action: action_track_conversation_context
+
+- rule: Handle Monday schedule requests
+  steps:
+    - intent: ask_monday_schedule
+    - action: action_smart_schedule_query
+    - action: action_track_conversation_context
+
+- rule: Handle today schedule requests
+  steps:
+    - intent: ask_today_schedule
+    - action: action_smart_schedule_query
+    - action: action_track_conversation_context
+
+- rule: Handle weekly schedule requests
+  steps:
+    - intent: user_asks_schedule_rest_of_the_week
+    - action: action_get_weekly_schedule
+    - action: utter_followup_offer_help
+
+- rule: Handle next available course requests
+  steps:
+    - intent: ask_next_available_course
+    - action: action_smart_schedule_query
 
 - rule: Provide break suggestions
   steps:
     - intent: ask_break_suggestions
     - action: action_provide_break_suggestions
+
+- rule: Handle help requests
+  steps:
+    - intent: ask_help
+    - action: utter_list_bot_options
+    - action: utter_followup_offer_help
+
+- rule: Handle library location queries
+  steps:
+    - intent: ask_library_location
+    - action: utter_default_fallback
+
+- rule: Handle food options queries
+  steps:
+    - intent: ask_food_options
+    - action: utter_default_fallback
+
+- rule: Handle course info queries
+  steps:
+    - intent: ask_course_info
+    - action: action_fetch_course_classroom_by_course_name
+    - slot_was_set:
+      - course_classroom_found: True
+    - action: utter_followup_offer_help
+
+- rule: Handle course full info queries
+  steps:
+    - intent: ask_course_full_info
+    - action: action_fetch_course_classroom_by_course_name
+    - slot_was_set:
+      - course_classroom_found: True
+    - action: action_fetch_course_teacher_by_course_name
+    - slot_was_set:
+      - course_teacher_name_found: True
+    - slot_was_set:
+      - course_teacher_name_found_multiple: Null
+    - action: utter_followup_offer_help

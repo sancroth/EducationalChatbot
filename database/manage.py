@@ -6,11 +6,49 @@ import sys
 import os
 import subprocess
 from sqlalchemy.exc import OperationalError
+from sqlalchemy import create_engine, text
 
 # Add the current directory to the path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config import db_config
+
+def create_database_if_not_exists():
+    """Create the database if it doesn't exist"""
+    print("Checking if database exists...")
+    
+    # Parse database connection info
+    db_host = os.getenv("DB_HOST", "localhost")
+    db_user = os.getenv("DB_USER", "postgres")
+    db_password = os.getenv("DB_PASSWORD", "mysecretpassword")
+    db_port = os.getenv("DB_PORT", "5432")
+    db_name = os.getenv("DB_NAME", "ice")
+    
+    # Connect to PostgreSQL without specifying database (connects to default 'postgres' db)
+    admin_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/postgres"
+    
+    try:
+        admin_engine = create_engine(admin_url, isolation_level='AUTOCOMMIT')
+        
+        with admin_engine.connect() as conn:
+            # Check if database exists
+            result = conn.execute(
+                text("SELECT 1 FROM pg_database WHERE datname = :db_name"), {"db_name": db_name}
+            ).fetchone()
+            
+            if result:
+                print(f"✅ Database '{db_name}' already exists!")
+            else:
+                print(f"Creating database '{db_name}'...")
+                conn.execute(text(f'CREATE DATABASE "{db_name}"'))
+                print(f"✅ Database '{db_name}' created successfully!")
+        
+        admin_engine.dispose()
+        return True
+        
+    except Exception as e:
+        print(f"❌ Failed to create database: {e}")
+        return False
 
 def run_migrations():
     """Run Alembic migrations"""
@@ -54,10 +92,14 @@ def init_database():
     """Initialize database with tables and seed data"""
     print("Initializing database...")
     
+    # Create database if it doesn't exist
+    if not create_database_if_not_exists():
+        return False
+    
     # Test database connection
     try:
         session = db_config.get_session()
-        session.execute("SELECT 1")
+        session.execute(text("SELECT 1"))
         session.close()
         print("✅ Database connection successful!")
     except OperationalError as e:
@@ -136,7 +178,9 @@ def main():
     if command == 'init':
         init_database()
     elif command == 'migrate':
-        run_migrations()
+        # Create database if it doesn't exist before running migrations
+        if create_database_if_not_exists():
+            run_migrations()
     elif command == 'new-migration':
         if len(sys.argv) < 3:
             print("❌ Please provide a migration message")

@@ -193,7 +193,7 @@ class ActionSmartScheduleQuery(Action):
     def _handle_next_class(self, dispatcher, user_id, tracker, domain):
         """Handle 'when is my next class?'"""
         # Use the existing next available course action but with smarter follow-up
-        from actions import ActionGetNextAvailableCourse
+        from actions.actions import ActionGetNextAvailableCourse
         
         action = ActionGetNextAvailableCourse()
         result = action.run(dispatcher, tracker, domain)
@@ -383,7 +383,7 @@ class ActionProvideBreakSuggestions(Action):
                     dispatcher.utter_message(
                         text="Θέλεις να δεις που είναι η αίθουσα του επόμενου μαθήματος;",
                         buttons=[
-                            {"title": "Ναι, δείξε μου", "payload": f"/ask_course_classroom_by_course_name{{\"course_name\":\"{next_class[0]}\"}"}"},
+                            {"title": "Ναι, δείξε μου", "payload": f"/ask_course_classroom_by_course_name{{\"course_name\":\"{next_class[0]}\"}}"},
                             {"title": "Όχι, ευχαριστώ", "payload": "/user_deny"}
                         ]
                     )

@@ -28,6 +28,8 @@ services:
       - chatbot_network
   chatbot-auth:
     image: chatbot-auth:latest
+    build:
+      context: ./chatbot-auth
     pull_policy: if_not_present
     container_name: chatbot-auth
     ports:
@@ -44,6 +46,8 @@ services:
       - chatbot_network
   chatbot-nginx:
     user: "101:101"
+    build:
+      context: ./chatbot-nginx
     image: chatbot-nginx:latest
     pull_policy: if_not_present
     container_name: chatbot-nginx
@@ -61,6 +65,8 @@ services:
       - chatbot_network
   rasa-actions:
     image: chatbot-rasa
+    build:
+      context: ./chatbot-rasa
     pull_policy: if_not_present
     container_name: rasa-actions
 #    command: "start --actions actions --cors '*' --debug"
@@ -81,6 +87,8 @@ services:
       - ./chatbot-rasa/actions:/app/actions
   rasa-server:
     image: chatbot-rasa
+    build:
+      context: ./chatbot-rasa
     pull_policy: if_not_present
     container_name: rasa-server
     environment:
@@ -96,8 +104,8 @@ services:
       - ./chatbot-rasa:/app
   rag-service:
     image: rag-server
-    # build:
-    #   context: ./rag-service
+    build:
+      context: ./rag-service
     container_name: rag-service
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}

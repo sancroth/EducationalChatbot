@@ -19,6 +19,17 @@
             let isExpired = Date.now() >= payload.exp * 1000;
             if (isExpired) throw new Error("Token expired");
 
+            // Check if this is a new session (per session initialization)
+            let sessionInitialized = sessionStorage.getItem("webchat_initialized");
+            let shouldInitialize = !sessionInitialized;
+            
+            if (shouldInitialize) {
+                sessionStorage.setItem("webchat_initialized", "true");
+                console.log("New session detected - will run /initialize");
+            } else {
+                console.log("Session already initialized - skipping /initialize");
+            }
+
             console.log("Initializing Rasa WebChat...");
             window.WebChat.default({
                 customData: {
@@ -29,7 +40,7 @@
                     department_key: payload.sub.department_key,
                     authenticated: payload.sub.authenticated,
                 },
-                initPayload: "/initialize",
+                initPayload: shouldInitialize ? "/initialize" : "/greet",
                 socketUrl: "__RASA_SERVER__",
                 socketPath: "/socket.io/",
                 title: "Educational Assistant",
@@ -42,6 +53,7 @@
             console.error("JWT validation failed:", e);
             alert("Authentication required. Please log in again.");
             localStorage.removeItem("access_token");
+            sessionStorage.removeItem("webchat_initialized");
             window.location.href = "/auth"; 
         }
     };
